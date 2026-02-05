@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('API: organize-tags started');
     const { tags } = await req.json();
+    console.log('API: Parsed tags', tags ? tags.length : 'null');
 
     if (!tags || !Array.isArray(tags) || tags.length === 0) {
       return NextResponse.json({ error: 'No tags provided' }, { status: 400 });
@@ -17,6 +19,7 @@ export async function POST(req: NextRequest) {
     if (userApiKey === process.env.ADMIN_ACCESS_KEY) {
       apiKey = process.env.OPENAI_API_KEY;
     }
+    console.log('API: API Key determined');
 
     if (!apiKey) {
       return NextResponse.json(
@@ -25,42 +28,50 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const openai = new OpenAI({
-      apiKey: apiKey,
+    // Use direct fetch to avoid potential OpenAI SDK issues in this specific route environment
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that groups a list of tags into high-level semantic themes. Return a JSON object with a key "clusters" containing an array of objects. Each object should have "theme" (string), "tags" (array of strings), and "hexColor" (string). Example: { "clusters": [{ "theme": "Work", "tags": ["meeting"], "hexColor": "#ef4444" }] }.',
+          },
+          {
+            role: 'user',
+            content: `Group these tags into themes: ${JSON.stringify(tags)}`,
+          },
+        ],
+        response_format: { type: 'json_object' },
+      }),
     });
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a helpful assistant that groups a list of tags into high-level semantic themes. Return a JSON array where each object has a "theme" (string), "tags" (array of strings), and "hexColor" (string, a valid 6-digit hex code that matches the vibe of the theme, e.g. #ef4444 for Urgent, #22d3ee for Tech). Try to keep it to 3-6 themes. Every input tag must appear exactly once in the output.',
-        },
-        {
-          role: 'user',
-          content: `Group these tags into themes: ${JSON.stringify(tags)}`,
-        },
-      ],
-      response_format: { type: 'json_object' },
-    });
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API Error:', errorText);
+        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+    }
 
-    const content = completion.choices[0].message.content || '{"clusters": []}';
+    const data = await response.json();
+    const content = data.choices[0].message.content || '{"clusters": []}';
+    
     let result;
     try {
-       result = JSON.parse(content);
-       // Handle if LLM returns { clusters: [...] } or { themes: [...] } or just [...]
-       // The prompt asks for an array but JSON mode requires an object wrapper often.
-       // Actually gpt-4o-mini with json_object requires the prompt to say "JSON object". 
-       // I should adjust the system prompt to explicitly ask for an object wrapper like { "clusters": [...] } 
-       // to be safe.
-       
+        result = JSON.parse(content);
     } catch (e) {
       console.error("JSON parse error", e);
       result = { clusters: [] };
     }
 
+
+
     return NextResponse.json({ 
-      clusters: result.clusters || result.themes || [],
+      clusters: result.clusters || [],
       success: true 
     });
 
