@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Sparkles, Clock, Loader2, LogOut } from 'lucide-react';
+import { Mic, Square, Sparkles, Loader2, LogOut, Settings, Clock } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import { useAuth } from '@/components/AuthProvider';
 import { VoiceNote } from '@/types';
@@ -11,7 +13,6 @@ import NoteDetail from '@/components/NoteDetail';
 import AuthModal from '@/components/AuthModal';
 import SettingsModal from '@/components/SettingsModal';
 import { loadUserNotes, saveVoiceNote, deleteVoiceNote, uploadAudio, updateNoteInsights } from '@/lib/firebase-helpers';
-import { Settings } from 'lucide-react';
 
 export default function Home() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -151,7 +152,14 @@ export default function Home() {
         className="flex items-center justify-between px-4 pt-8 pb-6 max-w-2xl mx-auto"
       >
         <div className="flex items-center gap-3">
-          <Sparkles className="w-8 h-8 text-cyan-400" />
+          <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-lg shadow-cyan-500/20">
+            <Image
+              src="/icon-512.png"
+              alt="JotThis Logo"
+              fill
+              className="object-cover"
+            />
+          </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
             JotThis
           </h1>
