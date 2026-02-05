@@ -15,6 +15,7 @@ export interface VoiceNote {
   shareToken?: string;
   isShared?: boolean;
   isFavorite?: boolean; // Default false
+  isLocked?: boolean;   // Default false (Prevent deletion)
   isArchived?: boolean; // Default false
   isDeleted?: boolean;  // Default false ("Soft Delete")
   deletedAt?: Date;     // Timestamp for soft deletion

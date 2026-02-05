@@ -49,6 +49,7 @@ export async function loadUserNotes(userId: string): Promise<VoiceNote[]> {
       isArchived: data.isArchived || false,
       isDeleted: data.isDeleted || false,
       isFavorite: data.isFavorite || false,
+      isLocked: data.isLocked || false,
       deletedAt: data.deletedAt?.toDate(),
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
@@ -246,6 +247,23 @@ export async function updateNoteShareToken(
   await updateDoc(noteRef, {
     shareToken,
     isShared,
+    updatedAt: Timestamp.now(),
+  });
+}
+
+/**
+ * Toggle lock status of a voice note
+ */
+export async function toggleLockVoiceNote(
+  userId: string,
+  noteId: string,
+  isLocked: boolean
+): Promise<void> {
+  const noteRef = doc(db, `users/${userId}/transcriptions`, noteId);
+  const { updateDoc } = await import('firebase/firestore');
+  
+  await updateDoc(noteRef, {
+    isLocked,
     updatedAt: Timestamp.now(),
   });
 }

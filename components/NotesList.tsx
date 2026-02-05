@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Tag, Trash2, Clock, Archive, ArchiveRestore, RefreshCcw, Heart, CheckSquare, Square } from 'lucide-react';
+import { FileText, Tag, Trash2, Clock, Archive, ArchiveRestore, RefreshCcw, Heart, CheckSquare, Square, Lock, Unlock } from 'lucide-react';
 import { VoiceNote } from '@/types';
 
 interface NotesListProps {
@@ -11,6 +11,7 @@ interface NotesListProps {
   onArchiveNote: (id: string, isArchived: boolean) => void;
   onRestoreNote: (id: string) => void;
   onFavoriteNote: (id: string, isFavorite: boolean) => void;
+  onLockNote: (id: string, isLocked: boolean) => void;
   viewMode: 'active' | 'archived' | 'trash';
   isSelectionMode?: boolean;
   selectedNoteIds?: Set<string>;
@@ -23,6 +24,7 @@ export default function NotesList({
   onArchiveNote,
   onRestoreNote,
   onFavoriteNote,
+  onLockNote,
   viewMode,
   isSelectionMode,
   selectedNoteIds
@@ -106,6 +108,36 @@ export default function NotesList({
                     {note.isArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                   </button>
                 )}
+
+                  {/* Lock Button */}
+                  {viewMode !== 'trash' && (
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        onLockNote(note.id, !note.isLocked);
+                      }}
+                      className={`btn btn-sm btn-circle btn-ghost ${note.isLocked ? 'text-amber-500 hover:text-amber-400' : 'text-slate-400 hover:text-amber-500'}`}
+                      title={note.isLocked ? "Unlock Note" : "Lock Note"}
+                    >
+                      {note.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                    </button>
+                  )}
+
+                  {/* Archive Button (not available in Trash) */}
+                  {viewMode !== 'trash' && (
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (note.isLocked) return;
+                        onArchiveNote(note.id, !note.isArchived);
+                      }}
+                      disabled={note.isLocked}
+                      className={`btn btn-sm btn-circle btn-ghost ${note.isLocked ? 'opacity-50 cursor-not-allowed text-slate-600' : 'text-slate-400 hover:text-cyan-400'}`}
+                      title={note.isLocked ? "Unlock to Archive" : (note.isArchived ? "Unarchive" : "Archive")}
+                    >
+                      {note.isArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
+                    </button>
+                  )}
 
                 {/* Restore Button (only in Trash) */}
                 {viewMode === 'trash' && (

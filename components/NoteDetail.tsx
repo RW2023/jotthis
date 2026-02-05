@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Sparkles, Loader2, ListChecks, Lightbulb, Search, Tag, Share2, Copy, Check, Archive, ArchiveRestore, RefreshCcw, Trash2, Heart } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, ListChecks, Lightbulb, Search, Tag, Share2, Copy, Check, Archive, ArchiveRestore, RefreshCcw, Trash2, Heart, Lock, Unlock } from 'lucide-react';
 import { VoiceNote } from '@/types';
 
 import { updateNoteShareToken } from '@/lib/firebase-helpers';
@@ -16,6 +16,7 @@ interface NoteDetailProps {
   onArchive: (id: string, isArchived: boolean) => void;
   onRestore: (id: string) => void;
   onFavorite: (id: string, isFavorite: boolean) => void;
+  onLock: (id: string, isLocked: boolean) => void;
   isTrash: boolean;
 }
 
@@ -31,6 +32,7 @@ export default function NoteDetail({
   onArchive,
   onRestore,
   onFavorite,
+  onLock,
   isTrash
 }: NoteDetailProps) {
   const [loadingInsight, setLoadingInsight] = useState<InsightType | null>(null);
@@ -193,16 +195,20 @@ export default function NoteDetail({
         {!isTrash && (
           <>
             <button
-              onClick={() => onFavorite(note.id, !note.isFavorite)}
-              className="btn btn-ghost btn-circle text-slate-400 hover:text-red-400"
-              title={note.isFavorite ? "Unfavorite" : "Favorite"}
+              onClick={() => onLock(note.id, !note.isLocked)}
+              className={`btn btn-ghost btn-circle ${note.isLocked ? 'text-amber-500 hover:text-amber-400' : 'text-slate-400 hover:text-amber-500'}`}
+              title={note.isLocked ? "Unlock Note" : "Lock Note"}
             >
-              <Heart className={`w-5 h-5 ${note.isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
+              {note.isLocked ? <Lock className="w-5 h-5" /> : <Unlock className="w-5 h-5" />}
             </button>
+
             <button
-              onClick={() => onArchive(note.id, !note.isArchived)}
-              className="btn btn-ghost btn-circle text-slate-400 hover:text-cyan-400"
-              title={note.isArchived ? "Unarchive" : "Archive"}
+              onClick={() => {
+                if (!note.isLocked) onArchive(note.id, !note.isArchived);
+              }}
+              disabled={!!note.isLocked}
+              className={`btn btn-ghost btn-circle ${note.isLocked ? 'opacity-50 cursor-not-allowed text-slate-600' : 'text-slate-400 hover:text-cyan-400'}`}
+              title={note.isLocked ? "Unlock to Archive" : (note.isArchived ? "Unarchive" : "Archive")}
             >
               {note.isArchived ? <ArchiveRestore className="w-5 h-5" /> : <Archive className="w-5 h-5" />}
             </button>
@@ -228,9 +234,12 @@ export default function NoteDetail({
         )}
 
         <button
-          onClick={() => onDelete(note.id)}
-          className={`btn btn-ghost btn-circle ${isTrash ? 'text-red-500 hover:bg-red-500/10' : 'text-slate-400 hover:text-red-400'}`}
-          title={isTrash ? "Delete Permanently" : "Move to Trash"}
+          onClick={() => {
+            if (!note.isLocked) onDelete(note.id);
+          }}
+          disabled={!!note.isLocked}
+          className={`btn btn-ghost btn-circle ${note.isLocked ? 'opacity-50 cursor-not-allowed text-slate-600' : (isTrash ? 'text-red-500 hover:bg-red-500/10' : 'text-slate-400 hover:text-red-400')}`}
+          title={note.isLocked ? "Unlock to Delete" : (isTrash ? "Delete Permanently" : "Move to Trash")}
         >
           <Trash2 className="w-5 h-5" />
         </button>
