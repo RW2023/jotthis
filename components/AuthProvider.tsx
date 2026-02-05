@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import {
   User,
-  signInAnonymously,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -18,7 +17,6 @@ import { toast } from 'react-hot-toast';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signInAnonymous: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<void>;
@@ -56,10 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const signInAnonymous = async () => {
-    await signInAnonymously(auth);
-  };
-
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     await signInWithRedirect(auth, provider);
@@ -82,7 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
-        signInAnonymous,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
