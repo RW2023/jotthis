@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Square, Sparkles, Loader2, LogOut, Settings, Clock } from 'lucide-react';
+import { Mic, Loader2, LogOut, Settings, Clock } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import { useAuth } from '@/components/AuthProvider';
 import { VoiceNote } from '@/types';
@@ -21,7 +20,7 @@ export default function Home() {
   const { status, duration, volume, startRecording, stopRecording, error } = useVoiceRecorder();
   const [notes, setNotes] = useState<VoiceNote[]>([]);
   const [selectedNote, setSelectedNote] = useState<VoiceNote | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
