@@ -13,6 +13,7 @@ import NoteDetail from '@/components/NoteDetail';
 import AuthModal from '@/components/AuthModal';
 import SettingsModal from '@/components/SettingsModal';
 import AudioWaveform from '@/components/AudioWaveform';
+import SearchInput from '@/components/SearchInput';
 import { loadUserNotes, saveVoiceNote, deleteVoiceNote, uploadAudio, updateNoteInsights } from '@/lib/firebase-helpers';
 
 export default function Home() {
@@ -24,6 +25,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [hasAutoShownAuthModal, setHasAutoShownAuthModal] = useState(() => {
     // Check sessionStorage to persist across redirects
     if (typeof window !== 'undefined') {
@@ -315,12 +317,35 @@ export default function Home() {
               }}
             />
           ) : (
-            <NotesList
-              key="list"
-              notes={notes}
+              <div className="space-y-6">
+                {/* Sticky Search Header */}
+                {notes.length > 0 && (
+                  <div className="sticky top-4 z-20 mx-auto max-w-md">
+                    <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-xl -m-4 rounded-b-2xl z-[-1] mask-gradient" />
+                    <SearchInput
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      className="shadow-lg"
+                    />
+                  </div>
+                )}
+
+                <NotesList
+                  key="list"
+                  notes={notes.filter(note => {
+                    if (!searchQuery) return true;
+                    const q = searchQuery.toLowerCase();
+                    return (
+                      note.title?.toLowerCase().includes(q) ||
+                      note.transcript?.toLowerCase().includes(q) ||
+                      note.tags?.some(tag => tag.toLowerCase().includes(q))
+                    );
+                  })}
+
               onSelectNote={setSelectedNote}
                 onDeleteNote={handleDeleteNote}
             />
+              </div>
           )}
         </AnimatePresence>
       </div>
