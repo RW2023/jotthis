@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { loadUserNotes } from '@/lib/firebase-helpers';
 import { VoiceNote } from '@/types';
 import Link from 'next/link';
-import { ArrowLeft, Search, Tag, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Search, Tag, Loader2, Sparkles, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function TagCloudPage() {
@@ -250,46 +250,67 @@ export default function TagCloudPage() {
           ))}
         </AnimatePresence>
 
-        {/* Results Section */}
+        {/* Results Sidebar */}
         <AnimatePresence>
           {selectedTag && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="space-y-4"
-            >
-              <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
-                <Tag className="w-5 h-5 text-cyan-400" />
-                Notes tagged with &quot;{selectedTag}&quot;
-              </h2>
-              
-              <div className="grid gap-4">
-                {filteredNotes.map(note => (
-                  <Link 
-                    key={note.id} 
-                    href={`/?search=${selectedTag}`} // Or maybe just link to home with search usage? Actually linking to Home might reset state. 
-                    // Better to maybe show a mini card. But recreating NoteCard is complex.
-                    // For now, let's make it simple cards that might link to the main view if possible. 
-                    // Actually, since main view wipes state on reload, a link back to /?search=tag is the best "deep link" approach if supported.
-                    // I will need to update Home to read search param.
-                    className="glass p-4 rounded-xl hover:bg-white/5 transition-colors group block"
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setSelectedTag(null)}
+                className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
+              />
+
+              {/* Sidebar panel */}
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="fixed top-0 right-0 bottom-0 w-full md:w-96 bg-slate-900/95 border-l border-slate-700 shadow-2xl p-6 z-50 overflow-y-auto backdrop-blur-xl"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-slate-200 flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-cyan-400" />
+                    {selectedTag}
+                  </h2>
+                  <button
+                    onClick={() => setSelectedTag(null)}
+                    className="btn btn-ghost btn-circle btn-sm text-slate-400 hover:text-white"
                   >
-                     <div className="flex justify-between items-start mb-2">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="grid gap-4">
+                  {filteredNotes.map(note => (
+                    <Link
+                      key={note.id} 
+                      href={`/?search=${selectedTag}`}
+                      className="glass p-4 rounded-xl hover:bg-white/5 transition-colors group block border border-slate-700/50"
+                    >
+                      <div className="flex justify-between items-start mb-2">
                         <h3 className="font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">
-                           {note.title}
+                          {note.title}
                         </h3>
                         <span className="text-xs text-slate-500">
                           {new Date(note.createdAt).toLocaleDateString()}
                         </span>
-                     </div>
-                     <p className="text-slate-400 text-sm line-clamp-2">
-                       {note.transcript}
-                     </p>
-                  </Link>
-                ))}
-              </div>
-            </motion.div>
+                      </div>
+                      <p className="text-slate-400 text-sm line-clamp-2">
+                        {note.transcript}
+                      </p>
+                    </Link>
+                  ))}
+
+                  {filteredNotes.length === 0 && (
+                    <p className="text-slate-500 text-center py-4">No notes found (this shouldn't happen).</p>
+                  )}
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>
