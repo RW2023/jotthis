@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Loader2, LogOut, Settings, Clock } from 'lucide-react';
+import { Mic, Loader2, LogOut, Settings, Clock, Tag } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import { useAuth } from '@/components/AuthProvider';
 import { VoiceNote } from '@/types';
@@ -17,7 +19,17 @@ import SearchInput from '@/components/SearchInput';
 import { loadUserNotes, saveVoiceNote, deleteVoiceNote, uploadAudio, updateNoteInsights } from '@/lib/firebase-helpers';
 
 export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center"><Loader2 className="animate-spin text-cyan-400" /></div>}>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+function HomeContent() {
   const { user, loading: authLoading, signOut } = useAuth();
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get('search') || '';
   const { status, duration, volume, startRecording, stopRecording, error } = useVoiceRecorder();
   const [notes, setNotes] = useState<VoiceNote[]>([]);
   const [selectedNote, setSelectedNote] = useState<VoiceNote | null>(null);
@@ -25,7 +37,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [hasAutoShownAuthModal, setHasAutoShownAuthModal] = useState(() => {
     // Check sessionStorage to persist across redirects
     if (typeof window !== 'undefined') {
@@ -209,6 +221,14 @@ export default function Home() {
           >
             <Settings className="w-5 h-5 text-slate-400" />
           </button>
+
+          <Link
+            href="/tags"
+            className="btn btn-ghost btn-circle btn-sm"
+            title="Tags"
+          >
+            <Tag className="w-5 h-5 text-slate-400" />
+          </Link>
 
 
 
