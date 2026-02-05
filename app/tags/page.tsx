@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { loadUserNotes } from '@/lib/firebase-helpers';
 import { VoiceNote } from '@/types';
 import Link from 'next/link';
-import { ArrowLeft, Search, Tag, Loader2 } from 'lucide-react';
+import { ArrowLeft, Search, Tag, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function TagCloudPage() {
@@ -14,6 +14,11 @@ export default function TagCloudPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+
+  // Smart Grouping State
+  const [isSmartView, setIsSmartView] = useState(false);
+  const [isGrouping, setIsGrouping] = useState(false);
+  const [tagClusters, setTagClusters] = useState<{ theme: string; tags: string[]; hexColor?: string }[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -35,6 +40,43 @@ export default function TagCloudPage() {
 
     loadNotes();
   }, [user, authLoading]);
+
+  // Handle Smart Grouping
+  const handleSmartGroupToggle = async () => {
+    if (isSmartView) {
+      setIsSmartView(false);
+      return;
+    }
+
+    // If we already have clusters, just switch view
+    if (tagClusters.length > 0) {
+      setIsSmartView(true);
+      return;
+    }
+
+    setIsGrouping(true);
+    try {
+      const allTags = Array.from(new Set(notes.flatMap(n => n.tags || [])));
+      const response = await fetch('/api/organize-tags', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-openai-key': localStorage.getItem('openai_api_key') || '',
+        },
+        body: JSON.stringify({ tags: allTags }),
+      });
+
+      const data = await response.json();
+      if (data.success && data.clusters) {
+        setTagClusters(data.clusters);
+        setIsSmartView(true);
+      }
+    } catch (error) {
+      console.error('Failed to group tags:', error);
+    } finally {
+      setIsGrouping(false);
+    }
+  };
 
   // Aggregate tags
   const tagCounts = notes.reduce((acc, note) => {
@@ -80,6 +122,23 @@ export default function TagCloudPage() {
               Explore your {notes.length} notes by topic
             </p>
           </div>
+
+
+          <button
+            onClick={handleSmartGroupToggle}
+            disabled={isGrouping}
+            className={`btn btn-sm gap-2 transition-all ${isSmartView
+              ? 'btn-primary shadow-lg shadow-cyan-500/20'
+              : 'btn-ghost text-slate-400 hover:text-cyan-400'
+              }`}
+          >
+            {isGrouping ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className={`w-4 h-4 ${isSmartView ? 'text-yellow-300' : ''}`} />
+            )}
+            {isSmartView ? 'Smart View Active' : 'Smart Group'}
+          </button>
         </div>
 
         {/* Search Input */}
@@ -96,7 +155,8 @@ export default function TagCloudPage() {
           />
         </div>
 
-        {/* Tag Cloud */}
+        {/* Tag Cloud (Default View) */}
+        {!isSmartView && (
         <div className="flex flex-wrap items-center justify-center gap-3 mb-12">
           <AnimatePresence>
             {filteredTags.map(({ tag, count }) => {
@@ -133,9 +193,62 @@ export default function TagCloudPage() {
           </AnimatePresence>
           
           {filteredTags.length === 0 && (
-             <div className="text-slate-500 py-8">No tags found matching "{searchQuery}"</div>
-          )}
-        </div>
+              <div className="text-slate-500 py-8">No tags found matching &quot;{searchQuery}&quot;</div>
+            )}
+          </div>
+        )}
+
+        {/* Smart Clusters View */}
+        <AnimatePresence>
+          {isSmartView && tagClusters.map((cluster, idx) => (
+            <motion.div
+              key={cluster.theme}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className="mb-8"
+            >
+              <h3
+                className="text-lg font-semibold mb-3 border-b border-slate-800 pb-1 flex items-center gap-2"
+                style={{ color: cluster.hexColor || '#94a3b8' }}
+              >
+                <span className="w-2 h-8 rounded-r-full" style={{ backgroundColor: cluster.hexColor || '#94a3b8' }} />
+                {cluster.theme}
+              </h3>
+              <div className="flex flex-wrap gap-2 pl-4">
+                {cluster.tags.map(tag => {
+                  const count = tagCounts[tag] || 0;
+                  // Use the cluster color for the active state
+                  const activeColor = cluster.hexColor || '#06b6d4';
+                  const isSelected = selectedTag === tag;
+
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                      className={`
+                            px-3 py-1 text-sm rounded-full border transition-all flex items-center gap-2
+                            ${isSelected
+                          ? 'text-white shadow-lg'
+                          : 'bg-slate-800/30 text-slate-300 border-slate-700/50 hover:bg-slate-700/50'
+                        }
+                          `}
+                      style={{
+                        backgroundColor: isSelected ? activeColor : undefined,
+                        borderColor: isSelected ? activeColor : undefined,
+                        boxShadow: isSelected ? `0 0 15px ${activeColor}40` : undefined
+                      }}
+                    >
+                      <Tag className="w-3 h-3 opacity-50" />
+                      {tag}
+                      <span className="text-[10px] opacity-70 bg-black/20 px-1 rounded ml-1">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
         {/* Results Section */}
         <AnimatePresence>
@@ -148,7 +261,7 @@ export default function TagCloudPage() {
             >
               <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
                 <Tag className="w-5 h-5 text-cyan-400" />
-                Notes tagged with "{selectedTag}"
+                Notes tagged with &quot;{selectedTag}&quot;
               </h2>
               
               <div className="grid gap-4">
