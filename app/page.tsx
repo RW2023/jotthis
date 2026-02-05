@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Square, Sparkles, Loader2, LogOut, Settings, Clock } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
@@ -12,13 +13,15 @@ import NotesList from '@/components/NotesList';
 import NoteDetail from '@/components/NoteDetail';
 import AuthModal from '@/components/AuthModal';
 import SettingsModal from '@/components/SettingsModal';
+import AudioWaveform from '@/components/AudioWaveform';
 import { loadUserNotes, saveVoiceNote, deleteVoiceNote, uploadAudio, updateNoteInsights } from '@/lib/firebase-helpers';
 
 export default function Home() {
   const { user, loading: authLoading, signOut } = useAuth();
-  const { status, duration, startRecording, stopRecording, error } = useVoiceRecorder();
+  const { status, duration, volume, startRecording, stopRecording, error } = useVoiceRecorder();
   const [notes, setNotes] = useState<VoiceNote[]>([]);
   const [selectedNote, setSelectedNote] = useState<VoiceNote | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -28,16 +31,19 @@ export default function Home() {
   useEffect(() => {
     if (!user) {
       setNotes([]);
+      setLoading(false); // Set loading to false even if no user
       return;
     }
 
     const loadNotes = async () => {
-
+      setLoading(true);
       try {
         const userNotes = await loadUserNotes(user.uid);
         setNotes(userNotes);
       } catch (error) {
         console.error('Error loading notes:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -57,7 +63,24 @@ export default function Home() {
       return;
     }
 
-    if (status === 'recording') {
+    if (status === 'idle') {
+      const apiKey = localStorage.getItem('openai_api_key');
+      // Admin Access Key check would happen on server, but for UX we check if *some* key exists 
+      // or if they are just trying to record (which might not strictly need key until transcription)
+      // Actually transcription happens immediately after stop, so we should warn.
+      if (!apiKey) {
+        toast('Please add your OpenAI API Key in Settings to transcribe audio.', {
+          icon: '🔑',
+          style: {
+            borderRadius: '10px',
+            background: '#1e293b',
+            color: '#fff',
+          },
+        });
+        // We allow recording but warn they might fail transcription if they don't add it by stop time
+      }
+      await startRecording();
+    } else { // status === 'recording'
       setIsProcessing(true);
       const audioBlob = await stopRecording();
 
@@ -115,8 +138,6 @@ export default function Home() {
           setIsProcessing(false);
         }
       }
-    } else {
-      await startRecording();
     }
   };
 
@@ -145,6 +166,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
+      <Toaster position="top-center" />
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -208,22 +230,11 @@ export default function Home() {
                 <Loader2 className="w-10 h-10 animate-spin text-cyan-400" />
               ) : (
                 <>
-                  <motion.div
-                    animate={
-                      status === 'recording'
-                        ? {
-                          scale: [1, 1.3, 1],
-                          opacity: [0.5, 0, 0.5],
-                        }
-                        : {}
-                    }
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                    className="absolute inset-0 rounded-full bg-red-500 blur-xl"
-                  />
+                    {status === 'recording' && (
+                      <div className="absolute inset-0 flex items-center justify-center p-2 z-0">
+                        <AudioWaveform volume={volume} />
+                      </div>
+                    )}
                   <Mic
                     className={`w-10 h-10 relative z-10 ${status === 'recording' ? 'text-red-400' : 'text-cyan-400'
                       }`}

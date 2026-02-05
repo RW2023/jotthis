@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Sparkles, Loader2, ListChecks, Lightbulb, Search, Tag } from 'lucide-react';
 import { VoiceNote } from '@/types';
@@ -54,6 +55,13 @@ export default function NoteDetail({ note, onBack, onUpdate }: NoteDetailProps) 
       }
     } catch (err) {
       console.error('Failed to extract insights:', err);
+      toast.error('Failed to analyze note. Check your API Key.', {
+        style: {
+          borderRadius: '10px',
+          background: '#1e293b',
+          color: '#fff',
+        },
+      });
     } finally {
       setLoadingInsight(null);
     }
