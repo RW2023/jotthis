@@ -7,7 +7,6 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
-  signInWithRedirect,
   getRedirectResult,
   GoogleAuthProvider,
   signInWithPopup,

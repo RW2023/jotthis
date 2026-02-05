@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Tag, Calendar, Sparkles } from 'lucide-react';
 
 interface SharedNote {
@@ -131,7 +132,7 @@ export default async function SharedNotePage({
         </div>
 
         <div className="mt-10 text-center text-slate-500 text-sm">
-          Shared via <a href="/" className="text-cyan-400 hover:underline">JotThis</a>
+          Shared via <Link href="/" className="text-cyan-400 hover:underline">JotThis</Link>
         </div>
       </div>
     </div>
