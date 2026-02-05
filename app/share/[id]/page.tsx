@@ -46,8 +46,8 @@ export default async function SharedNotePage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: { token: string };
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ token: string }>;
 }) {
   const { id } = await params;
   const { token } = await searchParams;
