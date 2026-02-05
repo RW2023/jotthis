@@ -52,10 +52,11 @@ export async function POST(req: NextRequest) {
       insights,
       success: true,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Analysis error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Analysis failed';
     return NextResponse.json(
-      { error: error.message || 'Analysis failed' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

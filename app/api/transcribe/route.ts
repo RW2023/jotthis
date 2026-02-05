@@ -52,10 +52,11 @@ export async function POST(req: NextRequest) {
       tags: result.tags || [],
       success: true,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Transcription error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Transcription failed';
     return NextResponse.json(
-      { error: error.message || 'Transcription failed' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

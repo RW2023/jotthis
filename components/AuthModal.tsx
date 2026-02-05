@@ -57,8 +57,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         await signInWithEmail(email, password);
       }
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Authentication failed');
+      } else {
+        setError('An unknown error occurred');
+      }
     } finally {
       setLoading(false);
     }
