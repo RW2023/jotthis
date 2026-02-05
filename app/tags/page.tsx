@@ -93,12 +93,19 @@ export default function TagCloudPage() {
       }
 
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to organize tags');
+      }
+
       if (data.success && data.clusters) {
         setTagClusters(data.clusters);
         setIsSmartView(true);
         // Persist state
         localStorage.setItem('tagClusters', JSON.stringify(data.clusters));
         localStorage.setItem('smartViewActive', 'true');
+      } else {
+        toast.error('No clusters found');
       }
     } catch (error) {
       console.error('Failed to group tags:', error);
