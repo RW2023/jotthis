@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Tag, Trash2, Clock, Archive, ArchiveRestore, RefreshCcw } from 'lucide-react';
+import { FileText, Tag, Trash2, Clock, Archive, ArchiveRestore, RefreshCcw, Heart, CheckSquare, Square } from 'lucide-react';
 import { VoiceNote } from '@/types';
 
 interface NotesListProps {
@@ -10,7 +10,10 @@ interface NotesListProps {
   onDeleteNote: (id: string) => void;
   onArchiveNote: (id: string, isArchived: boolean) => void;
   onRestoreNote: (id: string) => void;
+  onFavoriteNote: (id: string, isFavorite: boolean) => void;
   viewMode: 'active' | 'archived' | 'trash';
+  isSelectionMode?: boolean;
+  selectedNoteIds?: Set<string>;
 }
 
 export default function NotesList({
@@ -19,7 +22,10 @@ export default function NotesList({
   onDeleteNote,
   onArchiveNote,
   onRestoreNote,
-  viewMode
+  onFavoriteNote,
+  viewMode,
+  isSelectionMode,
+  selectedNoteIds
 }: NotesListProps) {
   if (notes.length === 0) {
     return (
@@ -44,7 +50,10 @@ export default function NotesList({
         layout
       >
         <AnimatePresence mode="popLayout">
-          {notes.map(note => (
+          {notes.map(note => {
+            const isSelected = selectedNoteIds?.has(note.id);
+
+            return (
             <motion.div
               key={note.id}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -52,11 +61,38 @@ export default function NotesList({
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.2 }}
               layout
-              className="glass glass-hover p-5 rounded-xl cursor-pointer group relative"
+                 className={`glass p-5 rounded-xl cursor-pointer group relative transition-all duration-200 ${isSelectionMode && isSelected
+                     ? 'ring-2 ring-cyan-400 bg-slate-800/80'
+                     : 'glass-hover'
+                   }`}
               onClick={() => onSelectNote(note)}
             >
+
+                 {/* Selection Checkbox */}
+                 {isSelectionMode && (
+                   <div className="absolute top-3 left-3 z-10 text-cyan-400">
+                     {isSelected ? <CheckSquare className="w-5 h-5 fill-cyan-400/20" /> : <Square className="w-5 h-5 text-slate-500" />}
+                   </div>
+                 )}
+
               {/* Actions */}
-              <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                 <div className={`absolute top-3 right-3 flex gap-1 transition-opacity ${isSelectionMode ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'}`}>
+
+                   {/* Favorite Button */}
+                   {viewMode !== 'trash' && (
+                     <button
+                       onClick={e => {
+                         e.stopPropagation();
+                         onFavoriteNote(note.id, !note.isFavorite);
+                       }}
+                       className={`btn btn-sm btn-circle btn-ghost ${note.isFavorite ? 'text-yellow-400 hover:text-yellow-300' : 'text-slate-400 hover:text-yellow-400'}`}
+                       title={note.isFavorite ? "Unfavorite" : "Favorite"}
+                     >
+                       <Heart className={`w-4 h-4 ${note.isFavorite ? 'fill-current' : ''}`} />
+                     </button>
+                   )}
+
+
                 {/* Archive Button (not available in Trash) */}
                 {viewMode !== 'trash' && (
                   <button
@@ -99,14 +135,14 @@ export default function NotesList({
               </div>
 
               {/* Title */}
-              <h3 className="text-lg font-semibold text-slate-100 mb-2 pr-8">{note.title}</h3>
+                 <h3 className={`text-lg font-semibold text-slate-100 mb-2 pr-8 ${isSelectionMode ? 'pl-8' : ''}`}>{note.title}</h3>
 
               {/* Transcript Preview */}
-              <p className="text-sm text-slate-400 line-clamp-3 mb-3">{note.transcript}</p>
+                 <p className={`text-sm text-slate-400 line-clamp-3 mb-3 ${isSelectionMode ? 'pl-8' : ''}`}>{note.transcript}</p>
 
               {/* Tags */}
               {note.tags && note.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
+                   <div className={`flex flex-wrap gap-2 mb-3 ${isSelectionMode ? 'pl-8' : ''}`}>
                   {note.tags.map(tag => (
                     <span
                       key={tag}
@@ -120,7 +156,7 @@ export default function NotesList({
               )}
 
               {/* Timestamp */}
-              <div className="flex items-center gap-1 text-xs text-slate-500">
+                 <div className={`flex items-center gap-1 text-xs text-slate-500 ${isSelectionMode ? 'pl-8' : ''}`}>
                 <Clock className="w-3 h-3" />
                 {new Date(note.createdAt).toLocaleDateString('en-US', {
                   month: 'short',
@@ -130,7 +166,8 @@ export default function NotesList({
                 })}
               </div>
             </motion.div>
-          ))}
+            );
+          })}
         </AnimatePresence>
       </motion.div>
     </motion.div>

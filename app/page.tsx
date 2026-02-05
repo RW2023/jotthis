@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Loader2, LogOut, Settings, Clock, Tag } from 'lucide-react';
+import { Mic, Loader2, LogOut, Settings, Clock, Tag, Heart, CheckSquare, Square, Trash2, Archive, X } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import { useAuth } from '@/components/AuthProvider';
 import { VoiceNote } from '@/types';
@@ -16,7 +16,18 @@ import AuthModal from '@/components/AuthModal';
 import SettingsModal from '@/components/SettingsModal';
 import AudioWaveform from '@/components/AudioWaveform';
 import SearchInput from '@/components/SearchInput';
-import { loadUserNotes, saveVoiceNote, softDeleteVoiceNote, permanentlyDeleteVoiceNote, restoreVoiceNote, archiveVoiceNote, uploadAudio, updateNoteInsights } from '@/lib/firebase-helpers';
+import {
+  loadUserNotes,
+  saveVoiceNote,
+  softDeleteVoiceNote,
+  permanentlyDeleteVoiceNote,
+  restoreVoiceNote,
+  archiveVoiceNote,
+  uploadAudio,
+  updateNoteInsights,
+  toggleFavoriteVoiceNote,
+  bulkUpdateVoiceNotes
+} from '@/lib/firebase-helpers';
 
 export default function Home() {
   return (
@@ -38,7 +49,7 @@ function HomeContent() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [viewMode, setViewMode] = useState<'active' | 'archived' | 'trash'>('active');
+  const [viewMode, setViewMode] = useState<'active' | 'archived' | 'trash' | 'favorites'>('active');
   const [hasAutoShownAuthModal, setHasAutoShownAuthModal] = useState(() => {
     // Check sessionStorage to persist across redirects
     if (typeof window !== 'undefined') {
@@ -46,6 +57,10 @@ function HomeContent() {
     }
     return false;
   });
+
+  // Multiselect State
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
 
 
   // Load notes when user signs in
@@ -84,6 +99,12 @@ function HomeContent() {
     }
   }, [authLoading, user, hasAutoShownAuthModal]);
 
+  // Clear selection when changing view modes
+  useEffect(() => {
+    setIsSelectionMode(false);
+    setSelectedNoteIds(new Set());
+  }, [viewMode]);
+
   const handleRecord = async () => {
     if (!user) {
       setShowAuthModal(true);
@@ -92,9 +113,7 @@ function HomeContent() {
 
     if (status === 'idle') {
       const apiKey = localStorage.getItem('openai_api_key');
-      // Admin Access Key check would happen on server, but for UX we check if *some* key exists 
-      // or if they are just trying to record (which might not strictly need key until transcription)
-      // Actually transcription happens immediately after stop, so we should warn.
+      // Admin Access Key check would happen on server
       if (!apiKey) {
         toast('Please add your OpenAI API Key in Settings to transcribe audio.', {
           icon: '🔑',
@@ -104,7 +123,6 @@ function HomeContent() {
             color: '#fff',
           },
         });
-        // We allow recording but warn they might fail transcription if they don't add it by stop time
       }
       await startRecording();
     } else { // status === 'recording'
@@ -154,6 +172,7 @@ function HomeContent() {
               audioUrl,
               createdAt: new Date(),
               updatedAt: new Date(),
+              isFavorite: false,
             };
 
             setNotes(prev => [newNote, ...prev]);
@@ -223,11 +242,134 @@ function HomeContent() {
     }
   };
 
+  const handleToggleFavorite = async (noteId: string, isFavorite: boolean) => {
+    if (!user) return;
+    // Optimistic update
+    setNotes(prev => prev.map(n => n.id === noteId ? { ...n, isFavorite } : n));
+    if (selectedNote?.id === noteId) setSelectedNote(prev => prev ? { ...prev, isFavorite } : null);
+
+    try {
+      await toggleFavoriteVoiceNote(user.uid, noteId, isFavorite);
+    } catch (error) {
+      // Revert on error
+      setNotes(prev => prev.map(n => n.id === noteId ? { ...n, isFavorite: !isFavorite } : n));
+      if (selectedNote?.id === noteId) setSelectedNote(prev => prev ? { ...prev, isFavorite: !isFavorite } : null);
+      console.error('Error toggling favorite:', error);
+      toast.error('Failed to update favorite status');
+    }
+  };
+
+  // Multiselect Handlers
+  const handleToggleSelectionMode = () => {
+    setIsSelectionMode(prev => !prev);
+    setSelectedNoteIds(new Set()); // Clear selection when toggling mode
+  };
+
+  const handleSelectNote = (noteId: string) => {
+    setSelectedNoteIds(prev => {
+      const next = new Set(prev);
+      if (next.has(noteId)) {
+        next.delete(noteId);
+      } else {
+        next.add(noteId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = (filteredNotes: VoiceNote[]) => {
+    if (selectedNoteIds.size === filteredNotes.length) {
+      // Deselect all
+      setSelectedNoteIds(new Set());
+    } else {
+      // Select all visible
+      setSelectedNoteIds(new Set(filteredNotes.map(n => n.id)));
+    }
+  };
+
+  const handleBulkAction = async (action: 'archive' | 'unarchive' | 'trash' | 'restore' | 'delete' | 'favorite' | 'unfavorite') => {
+    if (!user) return;
+    const ids = Array.from(selectedNoteIds);
+    if (ids.length === 0) return;
+
+    if (action === 'delete' && !confirm(`Permanently delete ${ids.length} notes? This cannot be undone.`)) return;
+
+    // Optimistic Updates
+    const originalNotes = [...notes]; // For rollback
+
+    let updates: Partial<VoiceNote> = {};
+
+    if (action === 'archive') updates = { isArchived: true };
+    if (action === 'unarchive') updates = { isArchived: false };
+    if (action === 'trash') updates = { isDeleted: true, deletedAt: new Date() };
+    if (action === 'restore') updates = { isDeleted: false, isArchived: false, deletedAt: undefined };
+    if (action === 'favorite') updates = { isFavorite: true };
+    if (action === 'unfavorite') updates = { isFavorite: false };
+
+    // Apply optimistic state
+    if (action === 'delete') {
+      setNotes(prev => prev.filter(n => !selectedNoteIds.has(n.id)));
+    } else {
+      setNotes(prev => prev.map(n => selectedNoteIds.has(n.id) ? { ...n, ...updates } : n));
+    }
+
+    // Exit selection mode
+    setIsSelectionMode(false);
+    setSelectedNoteIds(new Set());
+
+    try {
+      if (action === 'delete') {
+        // We have to delete one by one unfortunately because of storage cleanup, 
+        // but we can parallelize or create a bulk delete helper. 
+        // For now, let's just loop locally. Ideally bulk helper for atomicity.
+        // But we already have a loop in `bulkUpdateVoiceNotes`, implementing delete logic there or loop here.
+        await Promise.all(ids.map(id => {
+          const note = originalNotes.find(n => n.id === id);
+          return permanentlyDeleteVoiceNote(user.uid, id, note?.audioUrl);
+        }));
+      } else {
+        await bulkUpdateVoiceNotes(user.uid, ids, updates);
+      }
+      toast.success('Notes updated successfully');
+    } catch (error) {
+      console.error('Bulk action failed:', error);
+      setNotes(originalNotes); // Rolling back
+      toast.error('Failed to update notes');
+    }
+  };
+
+
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Helper to filter notes for rendering (and for select all)
+  const getFilteredNotes = () => {
+    return notes.filter(note => {
+      // Search Filter
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const match = (
+          note.title?.toLowerCase().includes(q) ||
+          note.transcript?.toLowerCase().includes(q) ||
+          note.tags?.some(tag => tag.toLowerCase().includes(q))
+        );
+        if (!match) return false;
+      }
+
+      // View Mode Filter
+      if (viewMode === 'trash') return note.isDeleted;
+      if (viewMode === 'favorites') return !note.isDeleted && note.isFavorite; // Favorites implicitly active? Or can be archived? Assume favorites are usually active. Let's include active/archived favorites.
+      if (viewMode === 'archived') return !note.isDeleted && note.isArchived;
+
+      // Active
+      return !note.isDeleted && !note.isArchived;
+    });
+  };
+
+  const filteredNotes = getFilteredNotes();
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
@@ -284,7 +426,7 @@ function HomeContent() {
         </div>
       </motion.div>
 
-      <div className="container mx-auto px-4 pb-8">
+      <div className="container mx-auto px-4 pb-8 relative">
         {/* Recording Section */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -343,26 +485,47 @@ function HomeContent() {
             )}
           </div>
 
-          {/* View Toggles */}
-          <div className="flex justify-center gap-2">
-            <button
-              onClick={() => setViewMode('active')}
-              className={`btn btn-sm ${viewMode === 'active' ? 'btn-primary' : 'btn-ghost text-slate-400'}`}
-            >
-              Active
-            </button>
-            <button
-              onClick={() => setViewMode('archived')}
-              className={`btn btn-sm ${viewMode === 'archived' ? 'btn-primary' : 'btn-ghost text-slate-400'}`}
-            >
-              Archive
-            </button>
-            <button
-              onClick={() => setViewMode('trash')}
-              className={`btn btn-sm ${viewMode === 'trash' ? 'btn-error' : 'btn-ghost text-slate-400'}`}
-            >
-              Trash
-            </button>
+          {/* View Toggles & Tools */}
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+            {/* Toggles */}
+            <div className="flex flex-wrap items-center justify-center bg-slate-800/50 p-1.5 rounded-xl gap-2 transition-all">
+              <button
+                onClick={() => setViewMode('active')}
+                className={`btn btn-sm rounded-lg px-4 border-0 transition-all ${viewMode === 'active' ? 'btn-primary shadow-lg shadow-cyan-500/20 scale-105' : 'btn-ghost text-slate-400 hover:bg-white/5'}`}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => setViewMode('favorites')}
+                className={`btn btn-sm rounded-lg px-4 border-0 transition-all ${viewMode === 'favorites' ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-lg shadow-amber-500/20 scale-105' : 'btn-ghost text-slate-400 hover:bg-white/5'}`}
+              >
+                <Heart className={`w-4 h-4 mr-1 ${viewMode === 'favorites' ? 'fill-white' : ''}`} />
+                Favs
+              </button>
+              <button
+                onClick={() => setViewMode('archived')}
+                className={`btn btn-sm rounded-lg px-4 border-0 transition-all ${viewMode === 'archived' ? 'btn-secondary shadow-lg shadow-secondary/20 scale-105' : 'btn-ghost text-slate-400 hover:bg-white/5'}`}
+              >
+                Archive
+              </button>
+              <button
+                onClick={() => setViewMode('trash')}
+                className={`btn btn-sm rounded-lg px-4 border-0 transition-all ${viewMode === 'trash' ? 'btn-error shadow-lg shadow-error/20 scale-105' : 'btn-ghost text-slate-400 hover:bg-white/5'}`}
+              >
+                Trash
+              </button>
+            </div>
+
+            {/* Select Toggle */}
+            {notes.length > 0 && (
+              <button
+                onClick={handleToggleSelectionMode}
+                className={`btn btn-sm gap-2 ${isSelectionMode ? 'btn-info' : 'btn-ghost text-slate-400'}`}
+              >
+                {isSelectionMode ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                {isSelectionMode ? 'Cancel Select' : 'Select'}
+              </button>
+            )}
           </div>
         </motion.div>
 
@@ -376,6 +539,7 @@ function HomeContent() {
               onDelete={viewMode === 'trash' ? handlePermanentDelete : handleSoftDelete}
               onArchive={(id, val) => handleArchive(id, val)}
               onRestore={handleRestore}
+              onFavorite={(id, val) => handleToggleFavorite(id, val)}
               isTrash={viewMode === 'trash'}
               onUpdate={async updatedNote => {
                 // Update local state
@@ -402,9 +566,24 @@ function HomeContent() {
               }}
             />
           ) : (
-              <div className="space-y-6">
+              <div className="space-y-6 pb-24">
+                {/* Selection Header (Visible in Selection Mode) */}
+                {isSelectionMode && (
+                  <div className="flex items-center justify-between bg-slate-800/80 p-3 rounded-xl backdrop-blur-sm border border-slate-700/50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-200 font-medium ml-2">{selectedNoteIds.size} Selected</span>
+                    </div>
+                    <button
+                      onClick={() => handleSelectAll(filteredNotes)}
+                      className="btn btn-sm btn-ghost text-cyan-400"
+                    >
+                      {selectedNoteIds.size === filteredNotes.length && filteredNotes.length > 0 ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                )}
+
                 {/* Sticky Search Header */}
-                {notes.length > 0 && (
+                {notes.length > 0 && !isSelectionMode && (
                   <div className="sticky top-4 z-20 mx-auto max-w-md">
                     <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-xl -m-4 rounded-b-2xl z-[-1] mask-gradient" />
                     <SearchInput
@@ -417,37 +596,114 @@ function HomeContent() {
 
                 <NotesList
                   key="list"
-                  notes={notes.filter(note => {
-                    // Filter by view mode
-                    if (viewMode === 'trash') {
-                      if (!note.isDeleted) return false;
-                    } else if (viewMode === 'archived') {
-                      if (note.isDeleted || !note.isArchived) return false;
+                  notes={filteredNotes}
+                  onSelectNote={(note) => {
+                    if (isSelectionMode) {
+                      handleSelectNote(note.id);
                     } else {
-                      // Active
-                      if (note.isDeleted || note.isArchived) return false;
+                      setSelectedNote(note);
                     }
-
-                    if (!searchQuery) return true;
-                    const q = searchQuery.toLowerCase();
-                    return (
-                      note.title?.toLowerCase().includes(q) ||
-                      note.transcript?.toLowerCase().includes(q) ||
-                      note.tags?.some(tag => tag.toLowerCase().includes(q))
-                    );
-                  })}
-                  onSelectNote={setSelectedNote}
+                  }}
                   onDeleteNote={viewMode === 'trash' ? handlePermanentDelete : handleSoftDelete}
                   onArchiveNote={(id, val) => handleArchive(id, val)}
                   onRestoreNote={handleRestore}
-                  viewMode={viewMode}
+                  onFavoriteNote={handleToggleFavorite}
+                  viewMode={viewMode as 'active' | 'archived' | 'trash'}
+                  isSelectionMode={isSelectionMode}
+                  selectedNoteIds={selectedNoteIds}
             />
               </div>
           )}
         </AnimatePresence>
-      </div>
 
-      {/* Auth Modal */}
+        {/* Bulk Action Bar - Floating at bottom */}
+        <AnimatePresence>
+          {isSelectionMode && selectedNoteIds.size > 0 && (
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              className="fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4"
+            >
+              <div className="bg-slate-800/90 backdrop-blur-md shadow-2xl border border-slate-700/50 rounded-2xl p-2 flex items-center gap-2">
+
+                {/* Actions based on view mode */}
+
+                {/* Favorite Action */}
+                {viewMode !== 'trash' && (
+                  <button
+                    onClick={() => handleBulkAction('favorite')}
+                    className="btn btn-circle btn-ghost text-slate-400 hover:text-yellow-400 tooltip"
+                    data-tip="Favorite"
+                  >
+                    <Heart className="w-5 h-5" />
+                  </button>
+                )}
+
+                {/* Archive Actions */}
+                {viewMode === 'active' || viewMode === 'favorites' ? (
+                  <button
+                    onClick={() => handleBulkAction('archive')}
+                    className="btn btn-circle btn-ghost text-slate-400 hover:text-cyan-400 tooltip"
+                    data-tip="Archive"
+                  >
+                    <Archive className="w-5 h-5" />
+                  </button>
+                ) : viewMode === 'archived' ? (
+                  <button
+                    onClick={() => handleBulkAction('unarchive')}
+                    className="btn btn-circle btn-ghost text-slate-400 hover:text-cyan-400 tooltip"
+                    data-tip="Unarchive"
+                  >
+                    <Archive className="w-5 h-5" />
+                  </button>
+                ) : null}
+
+                {/* Trash Actions */}
+                {viewMode === 'trash' ? (
+                  <>
+                    <button
+                      onClick={() => handleBulkAction('restore')}
+                      className="btn btn-circle btn-ghost text-green-400 hover:bg-green-400/10 tooltip tooltip-info"
+                      data-tip="Restore"
+                    >
+                      <Archive className="w-5 h-5 rotate-180" />
+                    </button>
+                    <div className="divider divider-horizontal mx-0"></div>
+                    <button
+                      onClick={() => handleBulkAction('delete')}
+                      className="btn btn-circle btn-ghost text-red-500 hover:bg-red-500/10 tooltip tooltip-error"
+                      data-tip="Delete Permanently"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => handleBulkAction('trash')}
+                    className="btn btn-circle btn-ghost text-slate-400 hover:text-red-400 tooltip"
+                    data-tip="Move to Trash"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                )}
+
+                <div className="divider divider-horizontal mx-0"></div>
+
+                <button
+                  onClick={() => {
+                    setSelectedNoteIds(new Set());
+                    setIsSelectionMode(false);
+                  }}
+                  className="btn btn-circle btn-ghost text-slate-500"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       <AuthModal
         isOpen={showAuthModal}

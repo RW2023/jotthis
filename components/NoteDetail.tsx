@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Sparkles, Loader2, ListChecks, Lightbulb, Search, Tag, Share2, Copy, Check, Archive, ArchiveRestore, RefreshCcw, Trash2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, ListChecks, Lightbulb, Search, Tag, Share2, Copy, Check, Archive, ArchiveRestore, RefreshCcw, Trash2, Heart } from 'lucide-react';
 import { VoiceNote } from '@/types';
 
 import { updateNoteShareToken } from '@/lib/firebase-helpers';
@@ -15,6 +15,7 @@ interface NoteDetailProps {
   onDelete: (id: string) => void;
   onArchive: (id: string, isArchived: boolean) => void;
   onRestore: (id: string) => void;
+  onFavorite: (id: string, isFavorite: boolean) => void;
   isTrash: boolean;
 }
 
@@ -29,6 +30,7 @@ export default function NoteDetail({
   onDelete,
   onArchive,
   onRestore,
+  onFavorite,
   isTrash
 }: NoteDetailProps) {
   const [loadingInsight, setLoadingInsight] = useState<InsightType | null>(null);
@@ -190,6 +192,13 @@ export default function NoteDetail({
         {/* Actions */}
         {!isTrash && (
           <>
+            <button
+              onClick={() => onFavorite(note.id, !note.isFavorite)}
+              className="btn btn-ghost btn-circle text-slate-400 hover:text-red-400"
+              title={note.isFavorite ? "Unfavorite" : "Favorite"}
+            >
+              <Heart className={`w-5 h-5 ${note.isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
+            </button>
             <button
               onClick={() => onArchive(note.id, !note.isArchived)}
               className="btn btn-ghost btn-circle text-slate-400 hover:text-cyan-400"
