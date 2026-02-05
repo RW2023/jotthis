@@ -109,7 +109,8 @@ export default function TagCloudPage() {
       }
     } catch (error) {
       console.error('Failed to group tags:', error);
-      toast.error('Failed to organize tags');
+      const message = error instanceof Error ? error.message : 'Failed to organize tags';
+      toast.error(message);
     } finally {
       setIsGrouping(false);
     }
