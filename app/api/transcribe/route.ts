@@ -14,10 +14,24 @@ export async function POST(req: NextRequest) {
     // Convert Blob to File for OpenAI API
     const audioFile = new File([audio], 'recording.webm', { type: 'audio/webm' });
 
-    // Initialize OpenAI client with user key or server key
+    // Initialize OpenAI client
     const userApiKey = req.headers.get('x-openai-key');
+    let apiKey: string | undefined = userApiKey || undefined;
+
+    // Check if user provided the Admin Access Key
+    if (userApiKey === process.env.ADMIN_ACCESS_KEY) {
+      apiKey = process.env.OPENAI_API_KEY;
+    }
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'OpenAI API Key is required. Please add it in Settings.' },
+        { status: 401 }
+      );
+    }
+
     const openai = new OpenAI({
-      apiKey: userApiKey || process.env.OPENAI_API_KEY,
+      apiKey: apiKey,
     });
 
     // Transcribe with OpenAI Whisper
