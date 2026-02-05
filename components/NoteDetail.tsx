@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Sparkles, Loader2, ListChecks, Lightbulb, Search, Tag, Share2, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, ListChecks, Lightbulb, Search, Tag, Share2, Copy, Check, Archive, ArchiveRestore, RefreshCcw, Trash2 } from 'lucide-react';
 import { VoiceNote } from '@/types';
 
 import { updateNoteShareToken } from '@/lib/firebase-helpers';
@@ -12,11 +12,25 @@ interface NoteDetailProps {
   note: VoiceNote;
   onBack: () => void;
   onUpdate: (note: VoiceNote) => void;
+  onDelete: (id: string) => void;
+  onArchive: (id: string, isArchived: boolean) => void;
+  onRestore: (id: string) => void;
+  isTrash: boolean;
 }
 
 type InsightType = 'actionItems' | 'contentIdeas' | 'research';
 
-export default function NoteDetail({ note, onBack, onUpdate }: NoteDetailProps) {
+
+
+export default function NoteDetail({
+  note,
+  onBack,
+  onUpdate,
+  onDelete,
+  onArchive,
+  onRestore,
+  isTrash
+}: NoteDetailProps) {
   const [loadingInsight, setLoadingInsight] = useState<InsightType | null>(null);
   const [insights, setInsights] = useState<VoiceNote['insights']>(note.insights || {});
   const [showShareModal, setShowShareModal] = useState(false);
@@ -170,14 +184,49 @@ export default function NoteDetail({ note, onBack, onUpdate }: NoteDetailProps) 
             })}
           </p>
         </div>
+      </div>
+
+      <div className="flex gap-2">
+        {/* Actions */}
+        {!isTrash && (
+          <>
+            <button
+              onClick={() => onArchive(note.id, !note.isArchived)}
+              className="btn btn-ghost btn-circle text-slate-400 hover:text-cyan-400"
+              title={note.isArchived ? "Unarchive" : "Archive"}
+            >
+              {note.isArchived ? <ArchiveRestore className="w-5 h-5" /> : <Archive className="w-5 h-5" />}
+            </button>
+
+            <button
+              onClick={handleShare}
+              className="btn btn-ghost text-cyan-400 hover:bg-cyan-400/10 gap-2"
+            >
+              <Share2 className="w-5 h-5" />
+              <span className="hidden sm:inline">Share</span>
+            </button>
+          </>
+        )}
+
+        {isTrash && (
+          <button
+            onClick={() => onRestore(note.id)}
+            className="btn btn-ghost text-green-400 hover:bg-green-400/10 gap-2"
+          >
+            <RefreshCcw className="w-5 h-5" />
+            <span className="hidden sm:inline">Restore</span>
+          </button>
+        )}
+
         <button
-          onClick={handleShare}
-          className="btn btn-ghost text-cyan-400 hover:bg-cyan-400/10 gap-2"
+          onClick={() => onDelete(note.id)}
+          className={`btn btn-ghost btn-circle ${isTrash ? 'text-red-500 hover:bg-red-500/10' : 'text-slate-400 hover:text-red-400'}`}
+          title={isTrash ? "Delete Permanently" : "Move to Trash"}
         >
-          <Share2 className="w-5 h-5" />
-          Share
+          <Trash2 className="w-5 h-5" />
         </button>
       </div>
+
 
       {/* Share Modal */}
       <AnimatePresence>

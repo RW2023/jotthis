@@ -16,7 +16,7 @@ import AuthModal from '@/components/AuthModal';
 import SettingsModal from '@/components/SettingsModal';
 import AudioWaveform from '@/components/AudioWaveform';
 import SearchInput from '@/components/SearchInput';
-import { loadUserNotes, saveVoiceNote, deleteVoiceNote, uploadAudio, updateNoteInsights } from '@/lib/firebase-helpers';
+import { loadUserNotes, saveVoiceNote, softDeleteVoiceNote, permanentlyDeleteVoiceNote, restoreVoiceNote, archiveVoiceNote, uploadAudio, updateNoteInsights } from '@/lib/firebase-helpers';
 
 export default function Home() {
   return (
@@ -38,6 +38,7 @@ function HomeContent() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [viewMode, setViewMode] = useState<'active' | 'archived' | 'trash'>('active');
   const [hasAutoShownAuthModal, setHasAutoShownAuthModal] = useState(() => {
     // Check sessionStorage to persist across redirects
     if (typeof window !== 'undefined') {
@@ -167,20 +168,58 @@ function HomeContent() {
     }
   };
 
-  const handleDeleteNote = async (noteId: string) => {
+  const handleSoftDelete = async (noteId: string) => {
     if (!user) return;
+    try {
+      await softDeleteVoiceNote(user.uid, noteId);
+      setNotes(prev => prev.map(n => n.id === noteId ? { ...n, isDeleted: true, deletedAt: new Date() } : n));
+      if (selectedNote?.id === noteId) setSelectedNote(null);
+      toast.success('Note moved to trash');
+    } catch (error) {
+      console.error('Error moving note to trash:', error);
+      toast.error('Failed to move note to trash');
+    }
+  };
+
+  const handlePermanentDelete = async (noteId: string) => {
+    if (!user) return;
+    if (!confirm('Are you sure you want to permanently delete this note? This cannot be undone.')) return;
 
     const note = notes.find(n => n.id === noteId);
-    if (!note) return;
-
     try {
-      await deleteVoiceNote(user.uid, noteId, note.audioUrl);
+      await permanentlyDeleteVoiceNote(user.uid, noteId, note?.audioUrl);
       setNotes(prev => prev.filter(n => n.id !== noteId));
-      if (selectedNote?.id === noteId) {
-        setSelectedNote(null);
-      }
+      if (selectedNote?.id === noteId) setSelectedNote(null);
+      toast.success('Note permanently deleted');
     } catch (error) {
       console.error('Error deleting note:', error);
+      toast.error('Failed to delete note');
+    }
+  };
+
+  const handleRestore = async (noteId: string) => {
+    if (!user) return;
+    try {
+      await restoreVoiceNote(user.uid, noteId);
+      setNotes(prev => prev.map(n => n.id === noteId ? { ...n, isDeleted: false, isArchived: false, deletedAt: undefined } : n));
+      if (selectedNote?.id === noteId) setSelectedNote(prev => prev ? { ...prev, isDeleted: false, isArchived: false } : null);
+      toast.success('Note restored');
+    } catch (error) {
+      console.error('Error restoring note:', error);
+      toast.error('Failed to restore note');
+    }
+  };
+
+  const handleArchive = async (noteId: string, isArchived: boolean) => {
+    if (!user) return;
+    try {
+      await archiveVoiceNote(user.uid, noteId, isArchived);
+      setNotes(prev => prev.map(n => n.id === noteId ? { ...n, isArchived } : n));
+      if (selectedNote?.id === noteId) setSelectedNote(prev => prev ? { ...prev, isArchived } : null);
+      toast.success(isArchived ? 'Note archived' : 'Note unarchived');
+    } catch (error) {
+      console.error('Error updating archive status:', error);
+      toast.error('Failed to update archive status');
     }
   };
 
@@ -303,6 +342,28 @@ function HomeContent() {
               </div>
             )}
           </div>
+
+          {/* View Toggles */}
+          <div className="flex justify-center gap-2">
+            <button
+              onClick={() => setViewMode('active')}
+              className={`btn btn-sm ${viewMode === 'active' ? 'btn-primary' : 'btn-ghost text-slate-400'}`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setViewMode('archived')}
+              className={`btn btn-sm ${viewMode === 'archived' ? 'btn-primary' : 'btn-ghost text-slate-400'}`}
+            >
+              Archive
+            </button>
+            <button
+              onClick={() => setViewMode('trash')}
+              className={`btn btn-sm ${viewMode === 'trash' ? 'btn-error' : 'btn-ghost text-slate-400'}`}
+            >
+              Trash
+            </button>
+          </div>
         </motion.div>
 
         {/* Notes List or Detail View */}
@@ -312,8 +373,12 @@ function HomeContent() {
               key="detail"
               note={selectedNote}
               onBack={() => setSelectedNote(null)}
+              onDelete={viewMode === 'trash' ? handlePermanentDelete : handleSoftDelete}
+              onArchive={(id, val) => handleArchive(id, val)}
+              onRestore={handleRestore}
+              isTrash={viewMode === 'trash'}
               onUpdate={async updatedNote => {
-              // Update local state
+                // Update local state
                 setNotes(prev => prev.map(n => (n.id === updatedNote.id ? updatedNote : n)));
                 setSelectedNote(updatedNote);
 
@@ -353,6 +418,16 @@ function HomeContent() {
                 <NotesList
                   key="list"
                   notes={notes.filter(note => {
+                    // Filter by view mode
+                    if (viewMode === 'trash') {
+                      if (!note.isDeleted) return false;
+                    } else if (viewMode === 'archived') {
+                      if (note.isDeleted || !note.isArchived) return false;
+                    } else {
+                      // Active
+                      if (note.isDeleted || note.isArchived) return false;
+                    }
+
                     if (!searchQuery) return true;
                     const q = searchQuery.toLowerCase();
                     return (
@@ -361,9 +436,11 @@ function HomeContent() {
                       note.tags?.some(tag => tag.toLowerCase().includes(q))
                     );
                   })}
-
-              onSelectNote={setSelectedNote}
-                onDeleteNote={handleDeleteNote}
+                  onSelectNote={setSelectedNote}
+                  onDeleteNote={viewMode === 'trash' ? handlePermanentDelete : handleSoftDelete}
+                  onArchiveNote={(id, val) => handleArchive(id, val)}
+                  onRestoreNote={handleRestore}
+                  viewMode={viewMode}
             />
               </div>
           )}

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Tag, Calendar, Sparkles } from 'lucide-react';
 
 interface SharedNote {
@@ -88,7 +89,7 @@ export default async function SharedNotePage({
       <div className="max-w-3xl mx-auto pt-10">
         {/* Header / Branding */}
         <div className="flex items-center gap-3 mb-10 opacity-70">
-          <img src="/icon-192.png" alt="JotThis Logo" className="w-8 h-8 rounded-lg" />
+          <Image src="/icon-192.png" alt="JotThis Logo" width={32} height={32} className="w-8 h-8 rounded-lg" />
           <span className="text-xl font-bold tracking-tight">JotThis</span>
         </div>
 

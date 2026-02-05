@@ -14,6 +14,9 @@ export interface VoiceNote {
   };
   shareToken?: string;
   isShared?: boolean;
+  isArchived?: boolean; // Default false
+  isDeleted?: boolean;  // Default false ("Soft Delete")
+  deletedAt?: Date;     // Timestamp for soft deletion
 }
 
 export interface Tag {

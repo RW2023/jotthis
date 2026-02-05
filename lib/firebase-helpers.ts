@@ -46,6 +46,9 @@ export async function loadUserNotes(userId: string): Promise<VoiceNote[]> {
       tags: data.tags || [],
       audioUrl: data.audioUrl,
       insights: data.insights,
+      isArchived: data.isArchived || false,
+      isDeleted: data.isDeleted || false,
+      deletedAt: data.deletedAt?.toDate(),
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
     } as VoiceNote;
@@ -53,9 +56,9 @@ export async function loadUserNotes(userId: string): Promise<VoiceNote[]> {
 }
 
 /**
- * Delete a voice note and its associated audio file
+ * Permanently delete a voice note and its associated audio file
  */
-export async function deleteVoiceNote(
+export async function permanentlyDeleteVoiceNote(
   userId: string,
   noteId: string,
   audioUrl?: string
@@ -73,6 +76,60 @@ export async function deleteVoiceNote(
       // Don't fail the whole operation if audio deletion fails
     }
   }
+}
+
+/**
+ * Soft delete a voice note (move to Trash)
+ */
+export async function softDeleteVoiceNote(
+  userId: string,
+  noteId: string
+): Promise<void> {
+  const noteRef = doc(db, `users/${userId}/transcriptions`, noteId);
+  const { updateDoc } = await import('firebase/firestore');
+  
+  await updateDoc(noteRef, {
+    isDeleted: true,
+    deletedAt: Timestamp.now(),
+    isArchived: false, // Ensure it's not in archive anymore
+    updatedAt: Timestamp.now(),
+  });
+}
+
+/**
+ * Restore a voice note from Trash or Archive
+ */
+export async function restoreVoiceNote(
+  userId: string,
+  noteId: string
+): Promise<void> {
+  const noteRef = doc(db, `users/${userId}/transcriptions`, noteId);
+  const { updateDoc } = await import('firebase/firestore');
+  
+  await updateDoc(noteRef, {
+    isDeleted: false,
+    isArchived: false,
+    deletedAt: null, // Clear deleted timestamp
+    updatedAt: Timestamp.now(),
+  });
+}
+
+/**
+ * Archive or Unarchive a voice note
+ */
+export async function archiveVoiceNote(
+  userId: string,
+  noteId: string,
+  isArchived: boolean
+): Promise<void> {
+  const noteRef = doc(db, `users/${userId}/transcriptions`, noteId);
+  const { updateDoc } = await import('firebase/firestore');
+  
+  await updateDoc(noteRef, {
+    isArchived,
+    isDeleted: false, // Ensure it's not deleted
+    updatedAt: Timestamp.now(),
+  });
 }
 
 /**

@@ -1,16 +1,26 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Tag, Trash2, Clock } from 'lucide-react';
+import { FileText, Tag, Trash2, Clock, Archive, ArchiveRestore, RefreshCcw } from 'lucide-react';
 import { VoiceNote } from '@/types';
 
 interface NotesListProps {
   notes: VoiceNote[];
   onSelectNote: (note: VoiceNote) => void;
   onDeleteNote: (id: string) => void;
+  onArchiveNote: (id: string, isArchived: boolean) => void;
+  onRestoreNote: (id: string) => void;
+  viewMode: 'active' | 'archived' | 'trash';
 }
 
-export default function NotesList({ notes, onSelectNote, onDeleteNote }: NotesListProps) {
+export default function NotesList({
+  notes,
+  onSelectNote,
+  onDeleteNote,
+  onArchiveNote,
+  onRestoreNote,
+  viewMode
+}: NotesListProps) {
   if (notes.length === 0) {
     return (
       <motion.div
@@ -45,16 +55,48 @@ export default function NotesList({ notes, onSelectNote, onDeleteNote }: NotesLi
               className="glass glass-hover p-5 rounded-xl cursor-pointer group relative"
               onClick={() => onSelectNote(note)}
             >
-              {/* Delete Button */}
-              <button
-                onClick={e => {
-                  e.stopPropagation();
-                  onDeleteNote(note.id);
-                }}
-                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity btn btn-sm btn-circle btn-ghost text-error"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {/* Actions */}
+              <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Archive Button (not available in Trash) */}
+                {viewMode !== 'trash' && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      onArchiveNote(note.id, !note.isArchived);
+                    }}
+                    className="btn btn-sm btn-circle btn-ghost text-slate-400 hover:text-cyan-400"
+                    title={note.isArchived ? "Unarchive" : "Archive"}
+                  >
+                    {note.isArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
+                  </button>
+                )}
+
+                {/* Restore Button (only in Trash) */}
+                {viewMode === 'trash' && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      onRestoreNote(note.id);
+                    }}
+                    className="btn btn-sm btn-circle btn-ghost text-green-400 hover:bg-green-400/10"
+                    title="Restore"
+                  >
+                    <RefreshCcw className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Delete Button */}
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    onDeleteNote(note.id);
+                  }}
+                  className={`btn btn-sm btn-circle btn-ghost ${viewMode === 'trash' ? 'text-red-500 hover:bg-red-500/10' : 'text-slate-400 hover:text-red-400'}`}
+                  title={viewMode === 'trash' ? "Delete Permanently" : "Move to Trash"}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
 
               {/* Title */}
               <h3 className="text-lg font-semibold text-slate-100 mb-2 pr-8">{note.title}</h3>
