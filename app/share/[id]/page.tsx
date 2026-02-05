@@ -88,7 +88,7 @@ export default async function SharedNotePage({
       <div className="max-w-3xl mx-auto pt-10">
         {/* Header / Branding */}
         <div className="flex items-center gap-3 mb-10 opacity-70">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-400 to-blue-500 opacity-80"></div>
+          <img src="/icon-192.png" alt="JotThis Logo" className="w-8 h-8 rounded-lg" />
           <span className="text-xl font-bold tracking-tight">JotThis</span>
         </div>
 
