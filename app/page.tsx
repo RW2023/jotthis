@@ -1,30 +1,73 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Sparkles, Clock, Loader2 } from 'lucide-react';
+import { Mic, Sparkles, Clock, Loader2, LogOut } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
+import { useAuth } from '@/components/AuthProvider';
 import { VoiceNote } from '@/types';
 import NotesList from '@/components/NotesList';
 import NoteDetail from '@/components/NoteDetail';
+import AuthModal from '@/components/AuthModal';
+import { loadUserNotes, saveVoiceNote, deleteVoiceNote, uploadAudio } from '@/lib/firebase-helpers';
 
 export default function Home() {
+  const { user, loading: authLoading, signOut } = useAuth();
   const { status, duration, startRecording, stopRecording, error } = useVoiceRecorder();
   const [notes, setNotes] = useState<VoiceNote[]>([]);
   const [selectedNote, setSelectedNote] = useState<VoiceNote | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [notesLoading, setNotesLoading] = useState(false);
+
+  // Load notes when user signs in
+  useEffect(() => {
+    if (!user) {
+      setNotes([]);
+      return;
+    }
+
+    const loadNotes = async () => {
+      setNotesLoading(true);
+      try {
+        const userNotes = await loadUserNotes(user.uid);
+        setNotes(userNotes);
+      } catch (error) {
+        console.error('Error loading notes:', error);
+      } finally {
+        setNotesLoading(false);
+      }
+    };
+
+    loadNotes();
+  }, [user]);
+
+  // Show auth modal when user is not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setShowAuthModal(true);
+    }
+  }, [authLoading, user]);
 
   const handleRecord = async () => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
     if (status === 'recording') {
       setIsProcessing(true);
       const audioBlob = await stopRecording();
 
       if (audioBlob) {
-        // Send to transcription API
-        const formData = new FormData();
-        formData.append('audio', audioBlob);
-
         try {
+          // First, upload audio to Firebase Storage (client-side with auth context)
+          const audioUrl = await uploadAudio(user.uid, audioBlob);
+
+          // Then send to transcription API
+          const formData = new FormData();
+          formData.append('audio', audioBlob);
+
           const response = await fetch('/api/transcribe', {
             method: 'POST',
             body: formData,
@@ -33,12 +76,22 @@ export default function Home() {
           const data = await response.json();
 
           if (data.success) {
-            const newNote: VoiceNote = {
-              id: `note-${Date.now()}`,
-              userId: 'demo-user',
+            // Save to Firestore with the audio URL
+            const noteId = await saveVoiceNote(user.uid, {
+              userId: user.uid,
               title: data.title,
               transcript: data.transcript,
               tags: data.tags,
+              audioUrl, // Use the client-side uploaded URL
+            });
+
+            const newNote: VoiceNote = {
+              id: noteId,
+              userId: user.uid,
+              title: data.title,
+              transcript: data.transcript,
+              tags: data.tags,
+              audioUrl,
               createdAt: new Date(),
               updatedAt: new Date(),
             };
@@ -57,6 +110,23 @@ export default function Home() {
     }
   };
 
+  const handleDeleteNote = async (noteId: string) => {
+    if (!user) return;
+
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+
+    try {
+      await deleteVoiceNote(user.uid, noteId, note.audioUrl);
+      setNotes(prev => prev.filter(n => n.id !== noteId));
+      if (selectedNote?.id === noteId) {
+        setSelectedNote(null);
+      }
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
+  };
+
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -69,12 +139,24 @@ export default function Home() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-center gap-3 pt-8 pb-6"
+        className="flex items-center justify-between px-4 pt-8 pb-6 max-w-2xl mx-auto"
       >
-        <Sparkles className="w-8 h-8 text-cyan-400" />
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-          JotThis
-        </h1>
+        <div className="flex items-center gap-3">
+          <Sparkles className="w-8 h-8 text-cyan-400" />
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+            JotThis
+          </h1>
+        </div>
+        {user && (
+          <button
+            onClick={() => signOut()}
+            className="btn btn-ghost btn-sm gap-2"
+            title="Sign Out"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Sign Out</span>
+          </button>
+        )}
       </motion.div>
 
       <div className="container mx-auto px-4 pb-8">
@@ -165,11 +247,14 @@ export default function Home() {
               key="list"
               notes={notes}
               onSelectNote={setSelectedNote}
-              onDeleteNote={id => setNotes(prev => prev.filter(n => n.id !== id))}
+                onDeleteNote={handleDeleteNote}
             />
           )}
         </AnimatePresence>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </main>
   );
 }

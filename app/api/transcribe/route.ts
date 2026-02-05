@@ -1,34 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
 
-// Mock transcription - replace with OpenAI Whisper when ready
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const audio = formData.get('audio') as Blob;
-
     if (!audio) {
       return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
     }
 
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Convert Blob to File for OpenAI API
+    const audioFile = new File([audio], 'recording.webm', { type: 'audio/webm' });
 
-    // Mock transcription result
-    const mockTranscript =
-      'This is a placeholder transcript for your voice note. In production, this will be transcribed by OpenAI Whisper. You can test the UI flow with this mock data.';
+    // Transcribe with OpenAI Whisper
+    const transcription = await openai.audio.transcriptions.create({
+      file: audioFile,
+      model: 'whisper-1',
+      language: 'en', // Optional: specify language
+    });
 
-    // Mock AI-generated title and tags
-    const mockTitle = 'Placeholder Voice Note';
-    const mockTags = ['productivity', 'ideas', 'notes'];
+    const transcript = transcription.text;
+
+
+
+    // Generate title and tags using GPT-4
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are an assistant that generates concise titles and relevant tags for voice notes. Return your response in JSON format with fields: title (string, max 60 chars) and tags (array of 2-4 strings).',
+        },
+        {
+          role: 'user',
+          content: `Generate a title and tags for this transcript:\n\n${transcript}`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+
+    const result = JSON.parse(completion.choices[0].message.content || '{}');
 
     return NextResponse.json({
-      transcript: mockTranscript,
-      title: mockTitle,
-      tags: mockTags,
+      transcript,
+      title: result.title || 'Untitled Note',
+      tags: result.tags || [],
       success: true,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Transcription error:', error);
-    return NextResponse.json({ error: 'Transcription failed' }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || 'Transcription failed' },
+      { status: 500 }
+    );
   }
 }
