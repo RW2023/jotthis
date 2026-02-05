@@ -9,7 +9,9 @@ import { VoiceNote } from '@/types';
 import NotesList from '@/components/NotesList';
 import NoteDetail from '@/components/NoteDetail';
 import AuthModal from '@/components/AuthModal';
+import SettingsModal from '@/components/SettingsModal';
 import { loadUserNotes, saveVoiceNote, deleteVoiceNote, uploadAudio, updateNoteInsights } from '@/lib/firebase-helpers';
+import { Settings } from 'lucide-react';
 
 export default function Home() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -18,6 +20,7 @@ export default function Home() {
   const [selectedNote, setSelectedNote] = useState<VoiceNote | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
 
   // Load notes when user signs in
@@ -66,8 +69,16 @@ export default function Home() {
           const formData = new FormData();
           formData.append('audio', audioBlob);
 
+          // Get custom API key from localStorage if available
+          const apiKey = localStorage.getItem('openai_api_key');
+          const headers: Record<string, string> = {};
+          if (apiKey) {
+            headers['x-openai-key'] = apiKey;
+          }
+
           const response = await fetch('/api/transcribe', {
             method: 'POST',
+            headers,
             body: formData,
           });
 
@@ -145,16 +156,27 @@ export default function Home() {
             JotThis
           </h1>
         </div>
-        {user && (
+
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => signOut()}
-            className="btn btn-ghost btn-sm gap-2"
-            title="Sign Out"
+            onClick={() => setShowSettingsModal(true)}
+            className="btn btn-ghost btn-circle btn-sm"
+            title="Settings"
           >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Sign Out</span>
+            <Settings className="w-5 h-5 text-slate-400" />
           </button>
-        )}
+
+          {user && (
+            <button
+              onClick={() => signOut()}
+              className="btn btn-ghost btn-sm gap-2"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
+          )}
+        </div>
       </motion.div>
 
       <div className="container mx-auto px-4 pb-8">
@@ -271,7 +293,16 @@ export default function Home() {
       </div>
 
       {/* Auth Modal */}
-      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+      />
+
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
     </main>
   );
 }

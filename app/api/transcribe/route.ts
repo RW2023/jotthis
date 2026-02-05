@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,6 +13,12 @@ export async function POST(req: NextRequest) {
 
     // Convert Blob to File for OpenAI API
     const audioFile = new File([audio], 'recording.webm', { type: 'audio/webm' });
+
+    // Initialize OpenAI client with user key or server key
+    const userApiKey = req.headers.get('x-openai-key');
+    const openai = new OpenAI({
+      apiKey: userApiKey || process.env.OPENAI_API_KEY,
+    });
 
     // Transcribe with OpenAI Whisper
     const transcription = await openai.audio.transcriptions.create({
