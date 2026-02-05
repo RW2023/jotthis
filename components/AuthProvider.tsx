@@ -56,6 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
+    // Force account selection to fix mobile PWA issue where it defaults to last user
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
     // Use popup for better compatibility likely fixing the null user issue
     await signInWithPopup(auth, provider);
   };
