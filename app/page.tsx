@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Loader2, LogOut, Settings, Clock, Tag, Heart, CheckSquare, Square, Trash2, Archive, X } from 'lucide-react';
+import { Mic, Loader2, LogOut, Settings, Clock, Tag, Heart, CheckSquare, Square, Trash2, Archive, X, Lock, Unlock } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import { useAuth } from '@/components/AuthProvider';
 import { VoiceNote } from '@/types';
@@ -26,6 +26,7 @@ import {
   uploadAudio,
   updateNoteInsights,
   toggleFavoriteVoiceNote,
+  toggleLockVoiceNote,
   bulkUpdateVoiceNotes
 } from '@/lib/firebase-helpers';
 
@@ -189,6 +190,11 @@ function HomeContent() {
 
   const handleSoftDelete = async (noteId: string) => {
     if (!user) return;
+    const note = notes.find(n => n.id === noteId);
+    if (note?.isLocked) {
+      toast.error('Cannot delete a locked note');
+      return;
+    }
     try {
       await softDeleteVoiceNote(user.uid, noteId);
       setNotes(prev => prev.map(n => n.id === noteId ? { ...n, isDeleted: true, deletedAt: new Date() } : n));
@@ -202,9 +208,13 @@ function HomeContent() {
 
   const handlePermanentDelete = async (noteId: string) => {
     if (!user) return;
+    const note = notes.find(n => n.id === noteId);
+    if (note?.isLocked) {
+      toast.error('Cannot delete a locked note');
+      return;
+    }
     if (!confirm('Are you sure you want to permanently delete this note? This cannot be undone.')) return;
 
-    const note = notes.find(n => n.id === noteId);
     try {
       await permanentlyDeleteVoiceNote(user.uid, noteId, note?.audioUrl);
       setNotes(prev => prev.filter(n => n.id !== noteId));
@@ -231,6 +241,11 @@ function HomeContent() {
 
   const handleArchive = async (noteId: string, isArchived: boolean) => {
     if (!user) return;
+    const note = notes.find(n => n.id === noteId);
+    if (note?.isLocked) {
+      toast.error('Cannot archive a locked note');
+      return;
+    }
     try {
       await archiveVoiceNote(user.uid, noteId, isArchived);
       setNotes(prev => prev.map(n => n.id === noteId ? { ...n, isArchived } : n));
@@ -256,6 +271,24 @@ function HomeContent() {
       if (selectedNote?.id === noteId) setSelectedNote(prev => prev ? { ...prev, isFavorite: !isFavorite } : null);
       console.error('Error toggling favorite:', error);
       toast.error('Failed to update favorite status');
+    }
+  };
+
+  const handleToggleLock = async (noteId: string, isLocked: boolean) => {
+    if (!user) return;
+    // Optimistic update
+    setNotes(prev => prev.map(n => n.id === noteId ? { ...n, isLocked } : n));
+    if (selectedNote?.id === noteId) setSelectedNote(prev => prev ? { ...prev, isLocked } : null);
+
+    try {
+      await toggleLockVoiceNote(user.uid, noteId, isLocked);
+      toast.success(isLocked ? 'Note locked' : 'Note unlocked');
+    } catch (error) {
+      // Revert
+      setNotes(prev => prev.map(n => n.id === noteId ? { ...n, isLocked: !isLocked } : n));
+      if (selectedNote?.id === noteId) setSelectedNote(prev => prev ? { ...prev, isLocked: !isLocked } : null);
+      console.error('Error toggling lock:', error);
+      toast.error('Failed to update lock status');
     }
   };
 
@@ -287,9 +320,20 @@ function HomeContent() {
     }
   };
 
-  const handleBulkAction = async (action: 'archive' | 'unarchive' | 'trash' | 'restore' | 'delete' | 'favorite' | 'unfavorite') => {
+  const handleBulkAction = async (action: 'archive' | 'unarchive' | 'trash' | 'restore' | 'delete' | 'favorite' | 'unfavorite' | 'lock' | 'unlock') => {
     if (!user) return;
-    const ids = Array.from(selectedNoteIds);
+    let ids = Array.from(selectedNoteIds);
+    if (ids.length === 0) return;
+
+    // Filter out locked notes for destructive actions
+    if (['trash', 'delete', 'archive'].includes(action)) {
+      const lockedIds = new Set(notes.filter(n => ids.includes(n.id) && n.isLocked).map(n => n.id));
+      if (lockedIds.size > 0) {
+        toast('Skipping locked notes', { icon: '🔒', style: { borderRadius: '10px', background: '#334155', color: '#fff' } });
+        ids = ids.filter(id => !lockedIds.has(id));
+      }
+    }
+
     if (ids.length === 0) return;
 
     if (action === 'delete' && !confirm(`Permanently delete ${ids.length} notes? This cannot be undone.`)) return;
@@ -305,6 +349,8 @@ function HomeContent() {
     if (action === 'restore') updates = { isDeleted: false, isArchived: false, deletedAt: undefined };
     if (action === 'favorite') updates = { isFavorite: true };
     if (action === 'unfavorite') updates = { isFavorite: false };
+    if (action === 'lock') updates = { isLocked: true };
+    if (action === 'unlock') updates = { isLocked: false };
 
     // Apply optimistic state
     if (action === 'delete') {
@@ -540,6 +586,7 @@ function HomeContent() {
               onArchive={(id, val) => handleArchive(id, val)}
               onRestore={handleRestore}
               onFavorite={(id, val) => handleToggleFavorite(id, val)}
+              onLock={(id, val) => handleToggleLock(id, val)}
               isTrash={viewMode === 'trash'}
               onUpdate={async updatedNote => {
                 // Update local state
@@ -608,6 +655,7 @@ function HomeContent() {
                   onArchiveNote={(id, val) => handleArchive(id, val)}
                   onRestoreNote={handleRestore}
                   onFavoriteNote={handleToggleFavorite}
+                  onLockNote={handleToggleLock}
                   viewMode={viewMode as 'active' | 'archived' | 'trash'}
                   isSelectionMode={isSelectionMode}
                   selectedNoteIds={selectedNoteIds}
@@ -631,13 +679,31 @@ function HomeContent() {
 
                 {/* Favorite Action */}
                 {viewMode !== 'trash' && (
-                  <button
-                    onClick={() => handleBulkAction('favorite')}
-                    className="btn btn-circle btn-ghost text-slate-400 hover:text-yellow-400 tooltip"
-                    data-tip="Favorite"
-                  >
-                    <Heart className="w-5 h-5" />
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleBulkAction('favorite')}
+                      className="btn btn-circle btn-ghost text-slate-400 hover:text-yellow-400 tooltip"
+                      data-tip="Favorite"
+                    >
+                      <Heart className="w-5 h-5" />
+                    </button>
+                    {/* Lock Action */}
+                    <button
+                      onClick={() => handleBulkAction('lock')}
+                      className="btn btn-circle btn-ghost text-slate-400 hover:text-amber-500 tooltip"
+                      data-tip="Lock"
+                    >
+                      <Lock className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleBulkAction('unlock')}
+                      className="btn btn-circle btn-ghost text-slate-400 hover:text-amber-500 tooltip"
+                      data-tip="Unlock"
+                    >
+                      <Unlock className="w-5 h-5" />
+                    </button>
+                    <div className="divider divider-horizontal mx-0"></div>
+                  </>
                 )}
 
                 {/* Archive Actions */}
