@@ -146,7 +146,7 @@ export default function NoteDetail({ note, onBack, onUpdate }: NoteDetailProps) 
 
       {/* Insights Display */}
       <AnimatePresence>
-        {Object.entries(insights).map(([type, items]) =>
+        {Object.entries(insights || {}).map(([type, items]) =>
           items && items.length > 0 ? (
             <motion.div
               key={type}

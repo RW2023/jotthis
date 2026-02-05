@@ -28,14 +28,12 @@ export default function Home() {
     }
 
     const loadNotes = async () => {
-      setNotesLoading(true);
+
       try {
         const userNotes = await loadUserNotes(user.uid);
         setNotes(userNotes);
       } catch (error) {
         console.error('Error loading notes:', error);
-      } finally {
-        setNotesLoading(false);
       }
     };
 
