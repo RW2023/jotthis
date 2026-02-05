@@ -21,9 +21,14 @@ export default function NoteDetail({ note, onBack, onUpdate }: NoteDetailProps) 
     setLoadingInsight(type);
 
     try {
+      const apiKey = localStorage.getItem('openai_api_key');
+
       const response = await fetch('/api/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-openai-key': apiKey || '',
+        },
         body: JSON.stringify({
           transcript: note.transcript,
           type,
