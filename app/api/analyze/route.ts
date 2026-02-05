@@ -11,9 +11,9 @@ const openai = new OpenAI({
 });
 
 const PROMPTS = {
-  actionItems: `Extract actionable items from this transcript. Return a JSON array of strings, each starting with an emoji (📋, ✅, 🔔, etc.) and describing a specific action to take. Limit to 3-5 items.`,
-  contentIdeas: `Generate content ideas based on this transcript. Return a JSON array of strings, each starting with an emoji (📝, 🎥, 💡, etc.) and describing a content piece idea. Limit to 3-5 ideas.`,
-  research: `Suggest research directions based on this transcript. Return a JSON array of strings, each starting with an emoji (🔍, 📚, 🌐, etc.) and describing a topic to research. Limit to 3-5 suggestions.`,
+  actionItems: `Extract actionable items from this transcript. Return a JSON object with a key "insights" containing an array of strings. Each string should start with an emoji (📋, ✅, 🔔, etc.) and describe a specific action to take. Limit to 3-5 items. Example: { "insights": ["📋 Call mom", "✅ Pay bills"] }`,
+  contentIdeas: `Generate content ideas based on this transcript. Return a JSON object with a key "insights" containing an array of strings. Each string should start with an emoji (📝, 🎥, 💡, etc.) and describe a content piece idea. Limit to 3-5 ideas. Example: { "insights": ["📝 Blog post about...", "🎥 Video tutorial on..."] }`,
+  research: `Suggest research directions based on this transcript. Return a JSON object with a key "insights" containing an array of strings. Each string should start with an emoji (🔍, 📚, 🌐, etc.) and describe a topic to research. Limit to 3-5 suggestions. Example: { "insights": ["🔍 Research deeper into...", "📚 Read about..."] }`,
 };
 
 export async function POST(req: NextRequest) {

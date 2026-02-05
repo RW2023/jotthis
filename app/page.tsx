@@ -9,7 +9,7 @@ import { VoiceNote } from '@/types';
 import NotesList from '@/components/NotesList';
 import NoteDetail from '@/components/NoteDetail';
 import AuthModal from '@/components/AuthModal';
-import { loadUserNotes, saveVoiceNote, deleteVoiceNote, uploadAudio } from '@/lib/firebase-helpers';
+import { loadUserNotes, saveVoiceNote, deleteVoiceNote, uploadAudio, updateNoteInsights } from '@/lib/firebase-helpers';
 
 export default function Home() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -237,9 +237,28 @@ export default function Home() {
               key="detail"
               note={selectedNote}
               onBack={() => setSelectedNote(null)}
-              onUpdate={updatedNote => {
+              onUpdate={async updatedNote => {
+              // Update local state
                 setNotes(prev => prev.map(n => (n.id === updatedNote.id ? updatedNote : n)));
                 setSelectedNote(updatedNote);
+
+                // Persist insights to Firestore if they changed
+                if (user && updatedNote.insights) {
+                  try {
+                    // Check each insight type and persist to Firestore
+                    if (updatedNote.insights.actionItems && updatedNote.insights.actionItems.length > 0) {
+                      await updateNoteInsights(user.uid, updatedNote.id, 'actionItems', updatedNote.insights.actionItems);
+                    }
+                    if (updatedNote.insights.contentIdeas && updatedNote.insights.contentIdeas.length > 0) {
+                      await updateNoteInsights(user.uid, updatedNote.id, 'contentIdeas', updatedNote.insights.contentIdeas);
+                    }
+                    if (updatedNote.insights.researchPointers && updatedNote.insights.researchPointers.length > 0) {
+                      await updateNoteInsights(user.uid, updatedNote.id, 'research', updatedNote.insights.researchPointers);
+                    }
+                  } catch (error) {
+                    console.error('Failed to save insights to Firestore:', error);
+                  }
+                }
               }}
             />
           ) : (

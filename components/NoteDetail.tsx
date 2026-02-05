@@ -32,12 +32,20 @@ export default function NoteDetail({ note, onBack, onUpdate }: NoteDetailProps) 
 
       const data = await response.json();
 
+      console.log('API Response:', data);
+
       if (data.success) {
-        const updatedInsights = { ...insights, [type]: data.insights };
+        // Map 'research' to 'researchPointers' to match VoiceNote type
+        const stateKey = type === 'research' ? 'researchPointers' : type;
+        const updatedInsights = { ...insights, [stateKey]: data.insights };
+
+        console.log('Updating insights state:', updatedInsights);
         setInsights(updatedInsights);
 
         const updatedNote = { ...note, insights: updatedInsights };
         onUpdate(updatedNote);
+      } else {
+        console.error('API returned success: false', data);
       }
     } catch (err) {
       console.error('Failed to extract insights:', err);
