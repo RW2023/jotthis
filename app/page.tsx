@@ -18,7 +18,7 @@ export default function Home() {
   const [selectedNote, setSelectedNote] = useState<VoiceNote | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [notesLoading, setNotesLoading] = useState(false);
+
 
   // Load notes when user signs in
   useEffect(() => {
