@@ -182,7 +182,7 @@ export default function TagCloudPage() {
             {filteredTags.map(({ tag, count }) => {
                // Calculate size based on count (min 1, max 5 for example)
                const maxCount = sortedTags[0]?.count || 1;
-               const scale = 1 + (count / maxCount) * 0.5; // Scale from 1.0 to 1.5
+              // const scale = 1 + (count / maxCount) * 0.5; // Unused
                const opacity = selectedTag && selectedTag !== tag ? 0.5 : 1;
                
                return (
@@ -326,7 +326,7 @@ export default function TagCloudPage() {
                   ))}
 
                   {filteredNotes.length === 0 && (
-                    <p className="text-slate-500 text-center py-4">No notes found (this shouldn't happen).</p>
+                    <p className="text-slate-500 text-center py-4">No notes found (this shouldn&apos;t happen).</p>
                   )}
                 </div>
               </motion.div>
