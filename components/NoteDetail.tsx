@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Sparkles, Loader2, ListChecks, Lightbulb, Search, Tag } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, ListChecks, Lightbulb, Search, Tag, Share2, Copy, Check } from 'lucide-react';
 import { VoiceNote } from '@/types';
+
+import { updateNoteShareToken } from '@/lib/firebase-helpers';
 
 interface NoteDetailProps {
   note: VoiceNote;
@@ -17,6 +19,41 @@ type InsightType = 'actionItems' | 'contentIdeas' | 'research';
 export default function NoteDetail({ note, onBack, onUpdate }: NoteDetailProps) {
   const [loadingInsight, setLoadingInsight] = useState<InsightType | null>(null);
   const [insights, setInsights] = useState<VoiceNote['insights']>(note.insights || {});
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [generatingLink, setGeneratingLink] = useState(false);
+
+  const handleShare = async () => {
+    setShowShareModal(true);
+
+    if (!note.shareToken) {
+      setGeneratingLink(true);
+      try {
+        // Generate a simple unique token (random string)
+        const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+        await updateNoteShareToken(note.userId, note.id, token, true);
+
+        const updatedNote = { ...note, shareToken: token, isShared: true };
+        onUpdate(updatedNote);
+      } catch (error) {
+        console.error('Error generating share link:', error);
+        toast.error('Failed to generate share link');
+      } finally {
+        setGeneratingLink(false);
+      }
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (!note.shareToken) return;
+
+    const url = `${window.location.origin}/share/${note.id}?token=${note.shareToken}`;
+    navigator.clipboard.writeText(url);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
+    toast.success('Link copied to clipboard!');
+  };
 
   const extractInsights = async (type: InsightType) => {
     setLoadingInsight(type);
@@ -133,7 +170,72 @@ export default function NoteDetail({ note, onBack, onUpdate }: NoteDetailProps) 
             })}
           </p>
         </div>
+        <button
+          onClick={handleShare}
+          className="btn btn-ghost text-cyan-400 hover:bg-cyan-400/10 gap-2"
+        >
+          <Share2 className="w-5 h-5" />
+          Share
+        </button>
       </div>
+
+      {/* Share Modal */}
+      <AnimatePresence>
+        {showShareModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#1e293b] border border-slate-700/50 rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
+            >
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+
+              <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-cyan-400" />
+                Share Note
+              </h3>
+              <p className="text-slate-400 mb-6 text-sm">
+                Anyone with this link can view the transcript of this note.
+              </p>
+
+              {generatingLink ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+                </div>
+              ) : (
+                <div className="bg-black/30 p-3 rounded-lg flex items-center gap-3 border border-slate-700/50">
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-slate-300 text-sm truncate font-mono">
+                      {typeof window !== 'undefined' ? `${window.location.origin}/share/${note.id}?token=${note.shareToken}` : 'Loading...'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={copyToClipboard}
+                    className="btn btn-square btn-sm btn-ghost hover:bg-white/10 text-cyan-400"
+                  >
+                    {copySuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className="btn btn-ghost text-slate-300 hover:text-white"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Tags */}
       {note.tags && note.tags.length > 0 && (

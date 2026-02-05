@@ -12,6 +12,8 @@ export interface VoiceNote {
     contentIdeas?: string[];
     researchPointers?: string[];
   };
+  shareToken?: string;
+  isShared?: boolean;
 }
 
 export interface Tag {

@@ -125,3 +125,22 @@ export async function updateNoteInsights(
   const { updateDoc } = await import('firebase/firestore');
   await updateDoc(noteRef, updateData);
 }
+
+/**
+ * Update share token for a voice note
+ */
+export async function updateNoteShareToken(
+  userId: string,
+  noteId: string,
+  shareToken: string | null,
+  isShared: boolean
+): Promise<void> {
+  const noteRef = doc(db, `users/${userId}/transcriptions`, noteId);
+  const { updateDoc } = await import('firebase/firestore');
+  
+  await updateDoc(noteRef, {
+    shareToken,
+    isShared,
+    updatedAt: Timestamp.now(),
+  });
+}
