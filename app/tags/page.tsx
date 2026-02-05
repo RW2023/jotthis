@@ -5,7 +5,9 @@ import { useAuth } from '@/components/AuthProvider';
 import { loadUserNotes } from '@/lib/firebase-helpers';
 import { VoiceNote } from '@/types';
 import Link from 'next/link';
-import { ArrowLeft, Search, Tag, Loader2, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Search, Tag, Loader2, Sparkles, X, Settings } from 'lucide-react';
+import { Toaster, toast } from 'react-hot-toast';
+import SettingsModal from '@/components/SettingsModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function TagCloudPage() {
@@ -14,6 +16,7 @@ export default function TagCloudPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Smart Grouping State
   const [isSmartView, setIsSmartView] = useState(false);
@@ -83,6 +86,12 @@ export default function TagCloudPage() {
         body: JSON.stringify({ tags: allTags }),
       });
 
+      if (response.status === 401) {
+        toast.error('Please set your OpenAI API Key to use Smart Grouping');
+        setShowSettings(true);
+        return;
+      }
+
       const data = await response.json();
       if (data.success && data.clusters) {
         setTagClusters(data.clusters);
@@ -93,6 +102,7 @@ export default function TagCloudPage() {
       }
     } catch (error) {
       console.error('Failed to group tags:', error);
+      toast.error('Failed to organize tags');
     } finally {
       setIsGrouping(false);
     }
@@ -128,6 +138,7 @@ export default function TagCloudPage() {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 p-6 font-sans">
+      <Toaster position="top-center" />
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
@@ -143,6 +154,13 @@ export default function TagCloudPage() {
             </p>
           </div>
 
+          <button
+            onClick={() => setShowSettings(true)}
+            className="btn btn-ghost btn-circle btn-sm text-slate-400 hover:text-cyan-400"
+            title="Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
 
           <button
             onClick={handleSmartGroupToggle}
@@ -334,6 +352,11 @@ export default function TagCloudPage() {
           )}
         </AnimatePresence>
       </div>
+
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
     </div>
   );
 }
