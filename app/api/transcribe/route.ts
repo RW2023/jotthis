@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         {
           role: 'system',
           content:
-            'You are an assistant that generates concise titles and relevant tags for voice notes. Return your response in JSON format with fields: title (string, max 60 chars) and tags (array of 2-4 strings).',
+            'You are a helpful assistant that generates concise, objective titles and relevant tags for voice notes. Do not infer emotions or themes like "gratitude" unless explicitly stated. Return your response in JSON format with fields: title (string, max 60 chars) and tags (array of 2-4 strings).',
         },
         {
           role: 'user',
