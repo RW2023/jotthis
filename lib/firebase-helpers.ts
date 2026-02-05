@@ -48,11 +48,59 @@ export async function loadUserNotes(userId: string): Promise<VoiceNote[]> {
       insights: data.insights,
       isArchived: data.isArchived || false,
       isDeleted: data.isDeleted || false,
+      isFavorite: data.isFavorite || false,
       deletedAt: data.deletedAt?.toDate(),
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
     } as VoiceNote;
   });
+}
+
+/**
+ * Toggle favorite status of a voice note
+ */
+export async function toggleFavoriteVoiceNote(
+  userId: string,
+  noteId: string,
+  isFavorite: boolean
+): Promise<void> {
+  const noteRef = doc(db, `users/${userId}/transcriptions`, noteId);
+  const { updateDoc } = await import('firebase/firestore');
+  
+  await updateDoc(noteRef, {
+    isFavorite,
+    updatedAt: Timestamp.now(),
+  });
+}
+
+/**
+ * Bulk update voice notes
+ */
+export async function bulkUpdateVoiceNotes(
+  userId: string,
+  noteIds: string[],
+  updates: Partial<VoiceNote>
+): Promise<void> {
+
+  // For small batches (< 500), we can use a batch write.
+  // Note: This helper assumes typical usage. For very large datasets, pagination would be needed.
+  const { writeBatch } = await import('firebase/firestore');
+  const batch = writeBatch(db);
+
+  noteIds.forEach(noteId => {
+    const noteRef = doc(db, `users/${userId}/transcriptions`, noteId);
+    // Convert Dates to Timestamps if present in updates
+    const firestoreUpdates: any = { ...updates, updatedAt: Timestamp.now() };
+
+    // Handle deletedAt special case
+    if (updates.deletedAt && updates.deletedAt instanceof Date) {
+        firestoreUpdates.deletedAt = Timestamp.fromDate(updates.deletedAt);
+    }
+    
+    batch.update(noteRef, firestoreUpdates);
+  });
+
+  await batch.commit();
 }
 
 /**
