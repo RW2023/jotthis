@@ -51,10 +51,15 @@ export async function POST(req: NextRequest) {
       }),
     });
 
+
+
     if (!response.ok) {
         const errorText = await response.text();
         console.error('OpenAI API Error:', errorText);
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+        // Do not expose full key, but hint at source
+        const keySource = userApiKey === process.env.ADMIN_ACCESS_KEY ? 'Server Key (Admin Swap)' : 'User Key';
+        const keyHint = apiKey ? `...${apiKey.slice(-4)}` : 'undefined';
+        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}. Source: ${keySource}, KeyHint: ${keyHint}`);
     }
 
     const data = await response.json();
