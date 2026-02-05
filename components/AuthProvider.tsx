@@ -10,6 +10,7 @@ import {
   signInWithRedirect,
   getRedirectResult,
   GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'react-hot-toast';
@@ -56,7 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithRedirect(auth, provider);
+    // Use popup for better compatibility likely fixing the null user issue
+    await signInWithPopup(auth, provider);
   };
 
   const signInWithEmail = async (email: string, password: string) => {

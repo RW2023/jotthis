@@ -24,6 +24,13 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [hasAutoShownAuthModal, setHasAutoShownAuthModal] = useState(() => {
+    // Check sessionStorage to persist across redirects
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('hasAutoShownAuthModal') === 'true';
+    }
+    return false;
+  });
 
 
   // Load notes when user signs in
@@ -33,6 +40,10 @@ export default function Home() {
       setLoading(false); // Set loading to false even if no user
       return;
     }
+
+    // Clear the auto-shown flag when user signs in so modal shows on next sign-out
+    sessionStorage.removeItem('hasAutoShownAuthModal');
+    setHasAutoShownAuthModal(false);
 
     const loadNotes = async () => {
       setLoading(true);
@@ -49,12 +60,14 @@ export default function Home() {
     loadNotes();
   }, [user]);
 
-  // Show auth modal when user is not logged in
+  // Auto-show auth modal when user is not logged in (only once on initial load)
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !user && !hasAutoShownAuthModal) {
       setShowAuthModal(true);
+      setHasAutoShownAuthModal(true);
+      sessionStorage.setItem('hasAutoShownAuthModal', 'true');
     }
-  }, [authLoading, user]);
+  }, [authLoading, user, hasAutoShownAuthModal]);
 
   const handleRecord = async () => {
     if (!user) {
@@ -194,6 +207,8 @@ export default function Home() {
           >
             <Settings className="w-5 h-5 text-slate-400" />
           </button>
+
+
 
           {user && (
             <button
