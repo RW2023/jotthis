@@ -41,16 +41,33 @@ export default function TagCloudPage() {
     loadNotes();
   }, [user, authLoading]);
 
+  useEffect(() => {
+    // Load persisted state on mount
+    const savedSmartView = localStorage.getItem('smartViewActive');
+    const savedClusters = localStorage.getItem('tagClusters');
+
+    if (savedSmartView === 'true' && savedClusters) {
+      try {
+        setTagClusters(JSON.parse(savedClusters));
+        setIsSmartView(true);
+      } catch (e) {
+        console.error('Failed to parse saved clusters', e);
+      }
+    }
+  }, []);
+
   // Handle Smart Grouping
   const handleSmartGroupToggle = async () => {
     if (isSmartView) {
       setIsSmartView(false);
+      localStorage.setItem('smartViewActive', 'false');
       return;
     }
 
     // If we already have clusters, just switch view
     if (tagClusters.length > 0) {
       setIsSmartView(true);
+      localStorage.setItem('smartViewActive', 'true');
       return;
     }
 
@@ -70,6 +87,9 @@ export default function TagCloudPage() {
       if (data.success && data.clusters) {
         setTagClusters(data.clusters);
         setIsSmartView(true);
+        // Persist state
+        localStorage.setItem('tagClusters', JSON.stringify(data.clusters));
+        localStorage.setItem('smartViewActive', 'true');
       }
     } catch (error) {
       console.error('Failed to group tags:', error);
