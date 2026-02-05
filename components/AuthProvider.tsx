@@ -8,10 +8,12 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { toast } from 'react-hot-toast';
 
 interface AuthContextType {
   user: User | null;
@@ -29,10 +31,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Handle redirect result (for Mobile/PWA flows)
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        await getRedirectResult(auth);
+      } catch (error) {
+        console.error('Redirect auth error:', error);
+        toast.error('Authentication failed. Please try again.');
+      }
+    };
+    handleRedirectResult();
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, user => {
       setUser(user);
       setLoading(false);
+      if (user) {
+        // Optional: toast.success(`Welcome back ${user.displayName || 'Guest'}!`);
+      }
     });
 
     return unsubscribe;
@@ -44,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    await signInWithRedirect(auth, provider);
   };
 
   const signInWithEmail = async (email: string, password: string) => {
