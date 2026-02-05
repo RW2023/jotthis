@@ -48,6 +48,26 @@ export default function NoteDetail({ note, onBack, onUpdate }: NoteDetailProps) 
         console.log('Updating insights state:', updatedInsights);
         setInsights(updatedInsights);
 
+        if (data.insights.length === 0) {
+          toast.success('No unique actionable items found in this note.', {
+            icon: 'ℹ️',
+            style: {
+              borderRadius: '10px',
+              background: '#1e293b',
+              color: '#fff',
+            },
+          });
+        } else {
+          toast.success('Analysis complete!', {
+            icon: '✨',
+            style: {
+              borderRadius: '10px',
+              background: '#1e293b',
+              color: '#fff',
+            },
+          });
+        }
+
         const updatedNote = { ...note, insights: updatedInsights };
         onUpdate(updatedNote);
       } else {

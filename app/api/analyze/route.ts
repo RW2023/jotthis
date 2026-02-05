@@ -9,7 +9,7 @@ interface AnalyzeRequest {
 
 
 const PROMPTS = {
-  actionItems: `Extract actionable items strictly from this transcript. Return a JSON object with a key "insights" containing an array of strings. Each string should start with an emoji (📋, ✅, 🔔, etc.) and describe a specific action mentioned. If no clear actions are present, return an empty array. Do not make up actions. Limit to 3-5 items. Example: { "insights": ["📋 Call mom", "✅ Pay bills"] }`,
+  actionItems: `Identify action items and logical next steps from this transcript. Return a JSON object with a key "insights" containing an array of strings. Each string should start with an emoji (📋, ✅, 🔔, etc.) and describe a specific task. If explicit tasks are missing, suggest relevant follow-up actions based on the context. Limit to 3-5 items. Example: { "insights": ["📋 Call mom", "✅ Pay bills"] }`,
   contentIdeas: `Generate content ideas that are directly derived from this transcript. Return a JSON object with a key "insights" containing an array of strings. Each string should start with an emoji (📝, 🎥, 💡, etc.) and describe a content piece idea based on the topics discussed. If the transcript is too short or unrelated to content creation, do not force ideas. Limit to 3-5 ideas. Example: { "insights": ["📝 Blog post about...", "🎥 Video tutorial on..."] }`,
   research: `Suggest research directions based strictly on topics mentioned in this transcript. Return a JSON object with a key "insights" containing an array of strings. Each string should start with an emoji (🔍, 📚, 🌐, etc.) and describe a topic to research. Do not hallucinate topics not discussed. Limit to 3-5 suggestions. Example: { "insights": ["🔍 Research deeper into...", "📚 Read about..."] }`,
 };
