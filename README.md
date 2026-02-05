@@ -115,7 +115,10 @@ match /users/{userId}/audio/{fileName} {
 ---
 
 ## 📄 License
-MIT
+
+**Proprietary Software**
+Copyright © 2026. All Rights Reserved.
+Unauthorized copying, modification, distribution, or use of this software is strictly prohibited.
 
 ---
 *Built with ❤️ by Antigravity*
