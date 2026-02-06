@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('API: organize-tags started');
+
     const { tags } = await req.json();
-    console.log('API: Parsed tags', tags ? tags.length : 'null');
+
 
     if (!tags || !Array.isArray(tags) || tags.length === 0) {
       return NextResponse.json({ error: 'No tags provided' }, { status: 400 });
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     if (userApiKey === process.env.ADMIN_ACCESS_KEY) {
       apiKey = process.env.OPENAI_API_KEY;
     }
-    console.log('API: API Key determined');
+
 
     if (!apiKey) {
       return NextResponse.json(

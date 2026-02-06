@@ -99,6 +99,7 @@ export default function NotesList({
                       onClick={(e) => { e.stopPropagation(); onToggleTriageStatus?.(note.id, 'done'); }}
                       className="flex items-center gap-1 text-[10px] uppercase font-bold text-rose-400 bg-rose-950/50 px-2 py-0.5 rounded border border-rose-500/20 hover:bg-rose-900/50 transition-colors group/badge"
                       title="Mark as Done"
+                      aria-label="Mark as Done"
                     >
                       <AlertCircle className="w-3 h-3 group-hover/badge:hidden" />
                       <CheckSquare className="w-3 h-3 hidden group-hover/badge:block" />
@@ -110,6 +111,7 @@ export default function NotesList({
                       onClick={(e) => { e.stopPropagation(); onToggleTriageStatus?.(note.id, 'done'); }}
                       className="flex items-center gap-1 text-[10px] uppercase font-bold text-amber-400 bg-amber-950/50 px-2 py-0.5 rounded border border-amber-500/20 hover:bg-amber-900/50 transition-colors group/badge"
                       title="Mark as Done"
+                      aria-label="Mark as Done"
                     >
                       <AlertCircle className="w-3 h-3 group-hover/badge:hidden" />
                       <CheckSquare className="w-3 h-3 hidden group-hover/badge:block" />
@@ -187,6 +189,7 @@ export default function NotesList({
                     }}
                     className="btn btn-sm btn-circle btn-ghost text-slate-400 hover:text-cyan-400"
                     title={note.isArchived ? "Unarchive" : "Archive"}
+                      aria-label={note.isArchived ? "Unarchive" : "Archive"}
                   >
                     {note.isArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                   </button>
@@ -201,6 +204,7 @@ export default function NotesList({
                       }}
                       className={`btn btn-sm btn-circle btn-ghost ${note.isLocked ? 'text-amber-500 hover:text-amber-400' : 'text-slate-400 hover:text-amber-500'}`}
                       title={note.isLocked ? "Unlock Note" : "Lock Note"}
+                      aria-label={note.isLocked ? "Unlock Note" : "Lock Note"}
                     >
                       {note.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                     </button>
@@ -217,6 +221,7 @@ export default function NotesList({
                     }}
                     className="btn btn-sm btn-circle btn-ghost text-green-400 hover:bg-green-400/10"
                     title="Restore"
+                      aria-label="Restore"
                   >
                     <RefreshCcw className="w-4 h-4" />
                   </button>
@@ -230,6 +235,7 @@ export default function NotesList({
                   }}
                   className={`btn btn-sm btn-circle btn-ghost ${viewMode === 'trash' ? 'text-red-500 hover:bg-red-500/10' : 'text-slate-400 hover:text-red-400'}`}
                   title={viewMode === 'trash' ? "Delete Permanently" : "Move to Trash"}
+                    aria-label={viewMode === 'trash' ? "Delete Permanently" : "Move to Trash"}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
