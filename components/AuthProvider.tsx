@@ -42,17 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     handleRedirectResult();
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, user => {
-      setUser(user);
-      setLoading(false);
-      if (user) {
-        // Optional: toast.success(`Welcome back ${user.displayName || 'Guest'}!`);
-      }
-    });
-
-    return unsubscribe;
-  }, []);
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();

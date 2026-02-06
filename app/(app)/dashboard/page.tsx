@@ -55,13 +55,7 @@ function HomeContent() {
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [viewMode, setViewMode] = useState<'active' | 'archived' | 'trash' | 'favorites'>('active');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
-  const [hasAutoShownAuthModal, setHasAutoShownAuthModal] = useState(() => {
-    // Check sessionStorage to persist across redirects
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('hasAutoShownAuthModal') === 'true';
-    }
-    return false;
-  });
+  const [hasAutoShownAuthModal, setHasAutoShownAuthModal] = useState(false);
 
   // Multiselect State
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -72,9 +66,7 @@ function HomeContent() {
 
   // Notes are loaded via NotesProvider
   useEffect(() => {
-    // Clear the auto-shown flag when user signs in so modal shows on next sign-out
     if (user) {
-      sessionStorage.removeItem('hasAutoShownAuthModal');
       setHasAutoShownAuthModal(false);
     }
   }, [user]);
@@ -90,14 +82,6 @@ function HomeContent() {
     }
   }, [searchParams, notes]);
 
-  // Auto-show auth modal when user is not logged in (only once on initial load)
-  useEffect(() => {
-    if (!authLoading && !user && !hasAutoShownAuthModal) {
-      setShowAuthModal(true);
-      setHasAutoShownAuthModal(true);
-      sessionStorage.setItem('hasAutoShownAuthModal', 'true');
-    }
-  }, [authLoading, user, hasAutoShownAuthModal]);
 
   // Clear selection when changing view modes
   useEffect(() => {
