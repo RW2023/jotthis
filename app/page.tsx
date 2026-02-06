@@ -353,10 +353,11 @@ function HomeContent() {
     if (action === 'unlock') updates = { isLocked: false };
 
     // Apply optimistic state
+    const idsToUpdate = new Set(ids);
     if (action === 'delete') {
-      setNotes(prev => prev.filter(n => !selectedNoteIds.has(n.id)));
+      setNotes(prev => prev.filter(n => !idsToUpdate.has(n.id)));
     } else {
-      setNotes(prev => prev.map(n => selectedNoteIds.has(n.id) ? { ...n, ...updates } : n));
+      setNotes(prev => prev.map(n => idsToUpdate.has(n.id) ? { ...n, ...updates } : n));
     }
 
     // Exit selection mode
