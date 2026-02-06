@@ -2,9 +2,14 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY 
-  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY) 
-  : null;
+let serviceAccount = null;
+try {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+  }
+} catch (e) {
+  console.warn('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', e);
+}
 
 if (!getApps().length && serviceAccount) {
   try {

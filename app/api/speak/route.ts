@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import OpenAI from 'openai';
 import { adminStorage } from '@/lib/firebase-admin';
 import { SHA256 } from 'crypto-js';
