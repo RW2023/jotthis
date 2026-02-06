@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Loader2, LogOut, Settings, Clock, Tag, Heart, CheckSquare, Square, Trash2, Archive, X, Lock, Unlock, ArrowDownUp } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import { useAuth } from '@/components/AuthProvider';
+import { useNotes } from '@/components/NotesProvider';
 import { VoiceNote, NoteCategory } from '@/types';
 import NotesList from '@/components/NotesList';
 import NoteDetail from '@/components/NoteDetail';
@@ -18,7 +19,7 @@ import { TriageCenter } from '@/components/TriageCenter';
 import AudioWaveform from '@/components/AudioWaveform';
 import SearchInput from '@/components/SearchInput';
 import {
-  loadUserNotes,
+  // loadUserNotes, // Removed as it's handled in context
   saveVoiceNote,
   softDeleteVoiceNote,
   permanentlyDeleteVoiceNote,
@@ -46,9 +47,8 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
   const { status, duration, volume, startRecording, stopRecording, error } = useVoiceRecorder();
-  const [notes, setNotes] = useState<VoiceNote[]>([]);
+  const { notes, setNotes, loading } = useNotes();
   const [selectedNote, setSelectedNote] = useState<VoiceNote | null>(null);
-  const [, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -70,32 +70,25 @@ function HomeContent() {
   const [triageFilter, setTriageFilter] = useState<{ type: 'priority' | 'action', value: string } | null>(null);
 
 
-  // Load notes when user signs in
+  // Notes are loaded via NotesProvider
   useEffect(() => {
-    if (!user) {
-      setNotes([]);
-      setLoading(false); // Set loading to false even if no user
-      return;
-    }
-
     // Clear the auto-shown flag when user signs in so modal shows on next sign-out
-    sessionStorage.removeItem('hasAutoShownAuthModal');
-    setHasAutoShownAuthModal(false);
-
-    const loadNotes = async () => {
-      setLoading(true);
-      try {
-        const userNotes = await loadUserNotes(user.uid);
-        setNotes(userNotes);
-      } catch (error) {
-        console.error('Error loading notes:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadNotes();
+    if (user) {
+      sessionStorage.removeItem('hasAutoShownAuthModal');
+      setHasAutoShownAuthModal(false);
+    }
   }, [user]);
+
+  // Handle Deep Linking / Command Palette Navigation
+  useEffect(() => {
+    const noteId = searchParams.get('noteId');
+    if (noteId && notes.length > 0) {
+      const note = notes.find(n => n.id === noteId);
+      if (note) {
+        setSelectedNote(note);
+      }
+    }
+  }, [searchParams, notes]);
 
   // Auto-show auth modal when user is not logged in (only once on initial load)
   useEffect(() => {

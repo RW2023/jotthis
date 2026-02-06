@@ -26,8 +26,8 @@ if (!getApps().length && serviceAccount) {
     console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is missing. Admin features will not work.");
     try {
         initializeApp({
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-            storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'demo-project',
+            storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'demo-bucket',
         });
     } catch (e) {
         console.error("Failed to initialize firebase-admin even without cert", e);
