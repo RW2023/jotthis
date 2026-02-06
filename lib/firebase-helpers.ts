@@ -44,6 +44,7 @@ export async function loadUserNotes(userId: string): Promise<VoiceNote[]> {
       title: data.title,
       transcript: data.transcript,
       tags: data.tags || [],
+      smartCategory: data.smartCategory || 'Uncategorized',
       audioUrl: data.audioUrl,
       insights: data.insights,
       isArchived: data.isArchived || false,

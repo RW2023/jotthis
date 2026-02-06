@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-
-
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -62,8 +60,6 @@ export async function POST(req: NextRequest) {
     const cleanedTranscript = cleanupCompletion.choices[0].message.content || transcript;
 
 
-
-
     // Generate title and tags using GPT-4
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -71,11 +67,11 @@ export async function POST(req: NextRequest) {
         {
           role: 'system',
           content:
-            'You are a helpful assistant that generates concise, objective titles and relevant tags for voice notes. Do not infer emotions or themes like "gratitude" unless explicitly stated. Return your response in JSON format with fields: title (string, max 60 chars) and tags (array of 2-4 strings).',
+            'You are a helpful assistant that generates concise, objective titles, relevant tags, and a smart category for voice notes. Classify the note into exactly one of these categories: "Work" (business, career, money), "Personal" (health, self-improvement, life admin), "Family" (kids, spouse, parents, home), "Hobby" (fun, games, movies, leisure). if unclear, use "Uncategorized". Do not infer emotions or themes like "gratitude" unless explicitly stated. Return your response in JSON format with fields: title (string, max 60 chars), tags (array of 2-4 strings), and category (string).',
         },
         {
           role: 'user',
-          content: `Generate a title and tags for this transcript:\n\n${transcript}`,
+          content: `Generate a title, tags, and category for this transcript:\n\n${cleanedTranscript}`,
         },
       ],
       response_format: { type: 'json_object' },
@@ -88,6 +84,7 @@ export async function POST(req: NextRequest) {
       originalTranscript: transcript,
       title: result.title || 'Untitled Note',
       tags: result.tags || [],
+      category: result.category || 'Uncategorized',
       success: true,
     });
   } catch (error: unknown) {

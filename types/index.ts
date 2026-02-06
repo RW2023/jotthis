@@ -1,9 +1,12 @@
+export type NoteCategory = 'Work' | 'Personal' | 'Family' | 'Hobby' | 'Uncategorized';
+
 export interface VoiceNote {
   id: string;
   userId: string;
   title: string;
   transcript: string;
   originalTranscript?: string;
+  smartCategory?: NoteCategory;
   tags: string[];
   audioUrl?: string;
   createdAt: Date;

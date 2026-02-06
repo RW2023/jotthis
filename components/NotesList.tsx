@@ -15,6 +15,7 @@ interface NotesListProps {
   viewMode: 'active' | 'archived' | 'trash';
   isSelectionMode?: boolean;
   selectedNoteIds?: Set<string>;
+  isFocusMode?: boolean;
 }
 
 export default function NotesList({
@@ -27,7 +28,8 @@ export default function NotesList({
   onLockNote,
   viewMode,
   isSelectionMode,
-  selectedNoteIds
+  selectedNoteIds,
+  isFocusMode
 }: NotesListProps) {
   if (notes.length === 0) {
     return (
@@ -63,12 +65,28 @@ export default function NotesList({
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.2 }}
               layout
-                 className={`glass p-5 rounded-xl cursor-pointer group relative transition-all duration-200 ${isSelectionMode && isSelected
-                     ? 'ring-2 ring-cyan-400 bg-slate-800/80'
-                     : 'glass-hover'
-                   }`}
+                className={`glass p-5 rounded-xl cursor-pointer group relative transition-all duration-200 
+                   ${isSelectionMode && isSelected ? 'ring-2 ring-cyan-400 bg-slate-800/80' : 'glass-hover'}
+                   ${isFocusMode && note.smartCategory === 'Work' ? 'border-l-4 border-l-emerald-400 bg-emerald-500/5' : ''}
+                   ${isFocusMode && note.smartCategory === 'Personal' ? 'border-l-4 border-l-blue-400 bg-blue-500/5' : ''}
+                   ${isFocusMode && note.smartCategory === 'Family' ? 'border-l-4 border-l-amber-400 bg-amber-500/5' : ''}
+                   ${isFocusMode && note.smartCategory === 'Hobby' ? 'border-l-4 border-l-rose-400 bg-rose-500/5' : ''}
+                   ${isFocusMode && (!note.smartCategory || note.smartCategory === 'Uncategorized') ? 'opacity-60 grayscale border-l-4 border-l-slate-700' : ''}
+                   `}
               onClick={() => onSelectNote(note)}
             >
+
+                {/* Category Badge (Focus Mode Only) */}
+                {isFocusMode && note.smartCategory && note.smartCategory !== 'Uncategorized' && (
+                  <div className={`absolute top-[-10px] left-4 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider shadow-sm border
+                  ${note.smartCategory === 'Work' ? 'bg-emerald-900/90 text-emerald-200 border-emerald-500/30' : ''}
+                  ${note.smartCategory === 'Personal' ? 'bg-blue-900/90 text-blue-200 border-blue-500/30' : ''}
+                  ${note.smartCategory === 'Family' ? 'bg-amber-900/90 text-amber-200 border-amber-500/30' : ''}
+                  ${note.smartCategory === 'Hobby' ? 'bg-rose-900/90 text-rose-200 border-rose-500/30' : ''}
+                `}>
+                    {note.smartCategory}
+                  </div>
+                )}
 
                  {/* Selection Checkbox */}
                  {isSelectionMode && (

@@ -310,6 +310,40 @@ export default function NoteDetail({
         )}
       </AnimatePresence>
 
+      {/* Category Selection */}
+      <div className="mb-6">
+        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block flex items-center gap-2">
+          Category
+          <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded-full border border-slate-700">Focus Mode</span>
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {(['Work', 'Personal', 'Family', 'Hobby', 'Uncategorized'] as const).map(category => {
+            const isSelected = note.smartCategory === category || (!note.smartCategory && category === 'Uncategorized');
+            let activeStyle = '';
+            if (category === 'Work') activeStyle = 'bg-emerald-500 text-white shadow-emerald-500/20 shadow-lg ring-1 ring-emerald-400';
+            if (category === 'Personal') activeStyle = 'bg-blue-500 text-white shadow-blue-500/20 shadow-lg ring-1 ring-blue-400';
+            if (category === 'Family') activeStyle = 'bg-amber-500 text-white shadow-amber-500/20 shadow-lg ring-1 ring-amber-400';
+            if (category === 'Hobby') activeStyle = 'bg-rose-500 text-white shadow-rose-500/20 shadow-lg ring-1 ring-rose-400';
+            if (category === 'Uncategorized') activeStyle = 'bg-slate-700 text-slate-200 ring-1 ring-slate-600';
+
+            return (
+              <button
+                key={category}
+                onClick={() => onUpdate({ ...note, smartCategory: category })}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border border-transparent
+                  ${isSelected
+                    ? activeStyle
+                    : 'bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border-slate-700/50'
+                  }
+                `}
+              >
+                {category}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Tags */}
       {note.tags && note.tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-6">

@@ -62,6 +62,7 @@ function HomeContent() {
   // Multiselect State
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
 
   // Load notes when user signs in
@@ -161,6 +162,7 @@ function HomeContent() {
               title: data.title,
               transcript: data.transcript,
               originalTranscript: data.originalTranscript,
+              smartCategory: (data.category || 'Uncategorized') as any, // Cast to NoteCategory if needed, or validate
               tags: data.tags,
               audioUrl, // Use the client-side uploaded URL
             });
@@ -171,6 +173,7 @@ function HomeContent() {
               title: data.title,
               transcript: data.transcript,
               originalTranscript: data.originalTranscript,
+              smartCategory: data.category || 'Uncategorized',
               tags: data.tags,
               audioUrl,
               createdAt: new Date(),
@@ -538,6 +541,23 @@ function HomeContent() {
           <div className="flex flex-col md:flex-row items-center justify-center gap-4">
             {/* Toggles */}
             <div className="flex flex-wrap items-center justify-center bg-slate-800/50 p-1.5 rounded-xl gap-2 transition-all">
+              {/* Focus Mode Toggle */}
+              <button
+                onClick={() => setIsFocusMode(!isFocusMode)}
+                className={`btn btn-sm rounded-lg px-2 border-0 transition-all ${isFocusMode
+                  ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/50 shadow-lg shadow-emerald-500/20'
+                  : 'btn-ghost text-slate-400 hover:bg-white/5'
+                  }`}
+                title={isFocusMode ? "Disable Focus Mode" : "Enable Focus Mode"}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${isFocusMode ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
+                  <span className="text-xs font-bold uppercase tracking-wider hidden sm:block">Focus</span>
+                </div>
+              </button>
+
+              <div className="w-px h-6 bg-slate-700 mx-1" />
+
               <button
                 onClick={() => setViewMode('active')}
                 className={`btn btn-sm rounded-lg px-4 border-0 transition-all ${viewMode === 'active' ? 'btn-primary shadow-lg shadow-cyan-500/20 scale-105' : 'btn-ghost text-slate-400 hover:bg-white/5'}`}
@@ -662,6 +682,7 @@ function HomeContent() {
                   viewMode={viewMode as 'active' | 'archived' | 'trash'}
                   isSelectionMode={isSelectionMode}
                   selectedNoteIds={selectedNoteIds}
+                  isFocusMode={isFocusMode}
             />
               </div>
           )}
