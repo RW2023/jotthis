@@ -54,6 +54,10 @@ describe('AuthProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authCallback = null;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ success: true }),
+      ok: true,
+    }));
 
     mockOnAuthStateChanged.mockImplementation((_auth: unknown, callback: (user: unknown) => void) => {
       authCallback = callback;
@@ -86,14 +90,20 @@ describe('AuthProvider', () => {
     it('should set user and loading=false when auth state changes', async () => {
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      const mockUser = { uid: 'user1', displayName: 'Test User' };
+      const mockUser = {
+        uid: 'user1',
+        displayName: 'Test User',
+        getIdToken: vi.fn().mockResolvedValue('fake-token')
+      };
 
       await act(async () => {
         authCallback?.(mockUser);
       });
 
-      expect(result.current.user).toEqual(mockUser);
-      expect(result.current.loading).toBe(false);
+      await waitFor(() => {
+        expect(result.current.user).toEqual(mockUser);
+        expect(result.current.loading).toBe(false);
+      });
     });
 
     it('should set user to null when signed out', async () => {
@@ -103,8 +113,10 @@ describe('AuthProvider', () => {
         authCallback?.(null);
       });
 
-      expect(result.current.user).toBeNull();
-      expect(result.current.loading).toBe(false);
+      await waitFor(() => {
+        expect(result.current.user).toBeNull();
+        expect(result.current.loading).toBe(false);
+      });
     });
   });
 

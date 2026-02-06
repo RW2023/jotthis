@@ -1,6 +1,7 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
+import { getAuth } from 'firebase-admin/auth';
 
 let serviceAccount = null;
 try {
@@ -36,3 +37,4 @@ if (!getApps().length && serviceAccount) {
 
 export const adminDb = getFirestore();
 export const adminStorage = getStorage();
+export const adminAuth = getAuth();

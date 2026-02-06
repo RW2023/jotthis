@@ -43,12 +43,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, user => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
-      setLoading(false);
-      if (user) {
-        // Optional: toast.success(`Welcome back ${user.displayName || 'Guest'}!`);
+
+      try {
+        if (user) {
+          const idToken = await user.getIdToken();
+          await fetch('/api/auth/session', {
+            method: 'POST',
+            body: JSON.stringify({ idToken }),
+            headers: { 'Content-Type': 'application/json' },
+          });
+        } else {
+          await fetch('/api/auth/session', {
+            method: 'DELETE',
+          });
+        }
+      } catch (error) {
+        console.error('Error syncing session cookie:', error);
       }
+
+      setLoading(false);
     });
 
     return unsubscribe;
