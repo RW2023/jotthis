@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Loader2, LogOut, Settings, Clock, Tag, Heart, CheckSquare, Square, Trash2, Archive, X, Lock, Unlock } from 'lucide-react';
+import { Mic, Loader2, LogOut, Settings, Clock, Tag, Heart, CheckSquare, Square, Trash2, Archive, X, Lock, Unlock, ArrowDownUp } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import { useAuth } from '@/components/AuthProvider';
 import { VoiceNote } from '@/types';
@@ -54,6 +54,7 @@ function HomeContent() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [viewMode, setViewMode] = useState<'active' | 'archived' | 'trash' | 'favorites'>('active');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [hasAutoShownAuthModal, setHasAutoShownAuthModal] = useState(() => {
     // Check sessionStorage to persist across redirects
     if (typeof window !== 'undefined') {
@@ -446,6 +447,10 @@ function HomeContent() {
 
       // Active
       return !note.isDeleted && !note.isArchived;
+    }).sort((a, b) => {
+      const dateA = a.createdAt instanceof Date ? a.createdAt.getTime() : 0;
+      const dateB = b.createdAt instanceof Date ? b.createdAt.getTime() : 0;
+      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
     });
   };
 
@@ -598,6 +603,17 @@ function HomeContent() {
               >
                 <Heart className={`w-4 h-4 mr-1 ${viewMode === 'favorites' ? 'fill-white' : ''}`} />
                 Favs
+              </button>
+
+              <div className="w-px h-6 bg-slate-700 mx-1" />
+
+              {/* Sort Toggle */}
+              <button
+                onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                className="btn btn-sm btn-ghost text-slate-400 hover:bg-white/5 px-2"
+                title={`Sort: ${sortOrder === 'newest' ? 'Newest First' : 'Oldest First'}`}
+              >
+                <ArrowDownUp className={`w-4 h-4 transition-transform ${sortOrder === 'oldest' ? 'rotate-180' : ''}`} />
               </button>
               <button
                 onClick={() => setViewMode('archived')}
