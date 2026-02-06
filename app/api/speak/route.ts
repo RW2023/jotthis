@@ -17,12 +17,19 @@ export async function POST(req: Request) {
     }
 
     // Verify API Key availability
-    const apiKey = req.headers.get('x-openai-key') || process.env.OPENAI_API_KEY;
+    const userApiKey = req.headers.get('x-openai-key');
+    let apiKey: string | undefined = userApiKey || process.env.OPENAI_API_KEY;
+
+    // Check if user provided the Admin Access Key
+    if (userApiKey === process.env.ADMIN_ACCESS_KEY) {
+      apiKey = process.env.OPENAI_API_KEY;
+    }
+
     if (!apiKey) {
       return NextResponse.json({ error: 'OpenAI API Key missing' }, { status: 401 });
     }
     
-    // Create new client if custom key provided
+    // Create new client if custom key provided (and it's not the server env key)
     const client = apiKey === process.env.OPENAI_API_KEY ? openai : new OpenAI({ apiKey });
 
     // 1. Generate Hash for Caching
