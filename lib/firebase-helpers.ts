@@ -296,7 +296,7 @@ export async function toggleLockVoiceNote(
 
 export const toggleTriageStatus = async (userId: string, noteId: string, status: 'pending' | 'done') => {
   try {
-    const noteRef = doc(db, 'users', userId, 'notes', noteId);
+    const noteRef = doc(db, 'users', userId, 'transcriptions', noteId);
     await updateDoc(noteRef, {
       'triage.status': status,
       updatedAt: new Date()
