@@ -18,16 +18,25 @@ let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-} else {
-  app = getApps()[0];
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
+if (typeof window !== 'undefined' || process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+  try {
+    if (!getApps().length) {
+      // Only initialize if we have a config, otherwise let it fail gracefully (e.g. build time)
+      if (firebaseConfig.apiKey) {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        storage = getStorage(app);
+      }
+    } else {
+      app = getApps()[0];
+      auth = getAuth(app);
+      db = getFirestore(app);
+      storage = getStorage(app);
+    }
+  } catch (error) {
+    console.warn('Firebase initialization error (expected during build if env missing):', error);
+  }
 }
 
 export { app, auth, db, storage };
