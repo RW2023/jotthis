@@ -1,5 +1,8 @@
 export type NoteCategory = 'Work' | 'Personal' | 'Family' | 'Hobby' | 'Uncategorized';
 
+export type NotePriority = 'critical' | 'high' | 'medium' | 'low';
+export type ActionType = 'task' | 'calendar' | 'purchase' | 'idea' | 'reference';
+
 export interface VoiceNote {
   id: string;
   userId: string;
@@ -7,6 +10,11 @@ export interface VoiceNote {
   transcript: string;
   originalTranscript?: string;
   smartCategory?: NoteCategory;
+  triage?: {
+    priority: NotePriority;
+    actionType: ActionType;
+    status: 'pending' | 'done';
+  };
   tags: string[];
   audioUrl?: string;
   createdAt: Date;

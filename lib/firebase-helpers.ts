@@ -7,6 +7,7 @@ import {
   query,
   orderBy,
   Timestamp,
+  updateDoc,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from './firebase';
@@ -45,6 +46,7 @@ export async function loadUserNotes(userId: string): Promise<VoiceNote[]> {
       transcript: data.transcript,
       tags: data.tags || [],
       smartCategory: data.smartCategory || 'Uncategorized',
+      triage: data.triage || { priority: 'medium', actionType: 'reference', status: 'pending' },
       audioUrl: data.audioUrl,
       insights: data.insights,
       isArchived: data.isArchived || false,
@@ -268,3 +270,17 @@ export async function toggleLockVoiceNote(
     updatedAt: Timestamp.now(),
   });
 }
+
+export const toggleTriageStatus = async (userId: string, noteId: string, status: 'pending' | 'done') => {
+  try {
+    const noteRef = doc(db, 'users', userId, 'notes', noteId);
+    await updateDoc(noteRef, {
+      'triage.status': status,
+      updatedAt: new Date()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error updating triage status:', error);
+    throw error;
+  }
+};

@@ -14,6 +14,7 @@ import NotesList from '@/components/NotesList';
 import NoteDetail from '@/components/NoteDetail';
 import AuthModal from '@/components/AuthModal';
 import SettingsModal from '@/components/SettingsModal';
+import { TriageCenter } from '@/components/TriageCenter';
 import AudioWaveform from '@/components/AudioWaveform';
 import SearchInput from '@/components/SearchInput';
 import {
@@ -27,7 +28,8 @@ import {
   updateNoteInsights,
   toggleFavoriteVoiceNote,
   toggleLockVoiceNote,
-  bulkUpdateVoiceNotes
+  bulkUpdateVoiceNotes,
+  toggleTriageStatus
 } from '@/lib/firebase-helpers';
 
 export default function Home() {
@@ -63,6 +65,7 @@ function HomeContent() {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [triageFilter, setTriageFilter] = useState<{ type: 'priority' | 'action', value: string } | null>(null);
 
 
   // Load notes when user signs in
@@ -162,7 +165,8 @@ function HomeContent() {
               title: data.title,
               transcript: data.transcript,
               originalTranscript: data.originalTranscript,
-              smartCategory: (data.category || 'Uncategorized') as any, // Cast to NoteCategory if needed, or validate
+              smartCategory: (data.category ? data.category.charAt(0).toUpperCase() + data.category.slice(1).toLowerCase() : 'Uncategorized') as any,
+              triage: data.triage,
               tags: data.tags,
               audioUrl, // Use the client-side uploaded URL
             });
@@ -173,7 +177,12 @@ function HomeContent() {
               title: data.title,
               transcript: data.transcript,
               originalTranscript: data.originalTranscript,
-              smartCategory: data.category || 'Uncategorized',
+              smartCategory: (data.category ? data.category.charAt(0).toUpperCase() + data.category.slice(1).toLowerCase() : 'Uncategorized') as any,
+              triage: {
+                ...data.triage,
+                priority: data.triage?.priority?.toLowerCase() || 'medium',
+                actionType: data.triage?.actionType?.toLowerCase() || 'reference',
+              },
               tags: data.tags,
               audioUrl,
               createdAt: new Date(),
@@ -294,6 +303,24 @@ function HomeContent() {
       if (selectedNote?.id === noteId) setSelectedNote(prev => prev ? { ...prev, isLocked: !isLocked } : null);
       console.error('Error toggling lock:', error);
       toast.error('Failed to update lock status');
+    }
+  };
+
+  const handleToggleTriageStatus = async (noteId: string, status: 'pending' | 'done') => {
+    if (!user) return;
+    // Optimistic Update
+    setNotes(prev => prev.map(n => n.id === noteId ? { ...n, triage: { ...n.triage!, status } } : n));
+    if (selectedNote?.id === noteId && selectedNote.triage) setSelectedNote({ ...selectedNote, triage: { ...selectedNote.triage, status } });
+
+    try {
+      await toggleTriageStatus(user.uid, noteId, status);
+      toast.success(status === 'done' ? 'Marked as Done' : 'Marked as Pending');
+    } catch (error) {
+      console.error('Error updating triage status:', error);
+      toast.error('Failed to update status');
+      // Revert
+      const originalStatus = status === 'done' ? 'pending' : 'done';
+      setNotes(prev => prev.map(n => n.id === noteId ? { ...n, triage: { ...n.triage!, status: originalStatus } } : n));
     }
   };
 
@@ -664,6 +691,15 @@ function HomeContent() {
                   </div>
                 )}
 
+                {/* Triage Center (Active View Only, Non-Focus Mode) */}
+                {!isFocusMode && viewMode === 'active' && notes.length > 0 && (
+                  <TriageCenter
+                    notes={filteredNotes}
+                    activeFilter={triageFilter}
+                    onFilterChange={setTriageFilter}
+                  />
+                )}
+
                 <NotesList
                   key="list"
                   notes={filteredNotes}
@@ -683,6 +719,8 @@ function HomeContent() {
                   isSelectionMode={isSelectionMode}
                   selectedNoteIds={selectedNoteIds}
                   isFocusMode={isFocusMode}
+                  triageFilter={triageFilter}
+                  onToggleTriageStatus={handleToggleTriageStatus}
             />
               </div>
           )}

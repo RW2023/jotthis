@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Tag, Trash2, Clock, Archive, ArchiveRestore, RefreshCcw, Heart, CheckSquare, Square, Lock, Unlock } from 'lucide-react';
+import { FileText, Tag, Trash2, Clock, Archive, ArchiveRestore, RefreshCcw, Heart, CheckSquare, Square, Lock, Unlock, AlertCircle, ShoppingCart, Calendar, Lightbulb } from 'lucide-react';
 import { VoiceNote } from '@/types';
 
 interface NotesListProps {
@@ -16,6 +16,8 @@ interface NotesListProps {
   isSelectionMode?: boolean;
   selectedNoteIds?: Set<string>;
   isFocusMode?: boolean;
+  triageFilter?: { type: 'priority' | 'action', value: string } | null;
+  onToggleTriageStatus?: (id: string, status: 'pending' | 'done') => void;
 }
 
 export default function NotesList({
@@ -29,7 +31,9 @@ export default function NotesList({
   viewMode,
   isSelectionMode,
   selectedNoteIds,
-  isFocusMode
+  isFocusMode,
+  triageFilter,
+  onToggleTriageStatus,
 }: NotesListProps) {
   if (notes.length === 0) {
     return (
@@ -54,8 +58,18 @@ export default function NotesList({
         layout
       >
         <AnimatePresence mode="popLayout">
-          {notes.map(note => {
+          {notes
+            .filter(note => {
+              if (!triageFilter) return true;
+              if (triageFilter.type === 'priority') return note.triage?.priority === triageFilter.value;
+              if (triageFilter.type === 'action') return note.triage?.actionType === triageFilter.value;
+              return true;
+            })
+            .map(note => {
             const isSelected = selectedNoteIds?.has(note.id);
+
+              const isPriorityCritical = note.triage?.priority === 'critical';
+              const isPriorityHigh = note.triage?.priority === 'high';
 
             return (
             <motion.div
@@ -72,11 +86,61 @@ export default function NotesList({
                    ${isFocusMode && note.smartCategory === 'Family' ? 'border-l-4 border-l-amber-400 bg-amber-500/5' : ''}
                    ${isFocusMode && note.smartCategory === 'Hobby' ? 'border-l-4 border-l-rose-400 bg-rose-500/5' : ''}
                    ${isFocusMode && (!note.smartCategory || note.smartCategory === 'Uncategorized') ? 'opacity-60 grayscale border-l-4 border-l-slate-700' : ''}
+                   ${isPriorityCritical ? 'ring-1 ring-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.1)]' : ''}
                    `}
               onClick={() => onSelectNote(note)}
             >
 
-                {/* Category Badge (Focus Mode Only) */}
+                {/* Triage Badges */}
+                <div className="absolute top-3 right-12 flex gap-2">
+                  {/* Priority Badge */}
+                  {note.triage?.priority === 'critical' && note.triage?.status !== 'done' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onToggleTriageStatus?.(note.id, 'done'); }}
+                      className="flex items-center gap-1 text-[10px] uppercase font-bold text-rose-400 bg-rose-950/50 px-2 py-0.5 rounded border border-rose-500/20 hover:bg-rose-900/50 transition-colors group/badge"
+                      title="Mark as Done"
+                    >
+                      <AlertCircle className="w-3 h-3 group-hover/badge:hidden" />
+                      <CheckSquare className="w-3 h-3 hidden group-hover/badge:block" />
+                      Do Now
+                    </button>
+                  )}
+                  {note.triage?.priority === 'high' && note.triage?.status !== 'done' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onToggleTriageStatus?.(note.id, 'done'); }}
+                      className="flex items-center gap-1 text-[10px] uppercase font-bold text-amber-400 bg-amber-950/50 px-2 py-0.5 rounded border border-amber-500/20 hover:bg-amber-900/50 transition-colors group/badge"
+                      title="Mark as Done"
+                    >
+                      <AlertCircle className="w-3 h-3 group-hover/badge:hidden" />
+                      <CheckSquare className="w-3 h-3 hidden group-hover/badge:block" />
+                      Schedule
+                    </button>
+                  )}
+
+                  {/* Action Icon */}
+                  {note.triage?.actionType === 'purchase' && (
+                    <span title="To Buy">
+                      <ShoppingCart className="w-4 h-4 text-purple-400" />
+                    </span>
+                  )}
+                  {note.triage?.actionType === 'calendar' && (
+                    <span title="Event">
+                      <Calendar className="w-4 h-4 text-blue-400" />
+                    </span>
+                  )}
+                  {note.triage?.actionType === 'task' && (
+                    <span title="Task">
+                      <CheckSquare className="w-4 h-4 text-emerald-400" />
+                    </span>
+                  )}
+                  {note.triage?.actionType === 'idea' && (
+                    <span title="Idea">
+                      <Lightbulb className="w-4 h-4 text-yellow-400" />
+                    </span>
+                  )}
+                </div>
+
+                {/* Category Badge (Focus Mode Only) - Moved down slightly if Triage is active */}
                 {isFocusMode && note.smartCategory && note.smartCategory !== 'Uncategorized' && (
                   <div className={`absolute top-[-10px] left-4 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider shadow-sm border
                   ${note.smartCategory === 'Work' ? 'bg-emerald-900/90 text-emerald-200 border-emerald-500/30' : ''}
@@ -88,6 +152,7 @@ export default function NotesList({
                   </div>
                 )}
 
+
                  {/* Selection Checkbox */}
                  {isSelectionMode && (
                    <div className="absolute top-3 left-3 z-10 text-cyan-400">
@@ -95,8 +160,8 @@ export default function NotesList({
                    </div>
                  )}
 
-              {/* Actions */}
-                 <div className={`absolute top-3 right-3 flex gap-1 transition-opacity ${isSelectionMode ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'}`}>
+                {/* Actions - Adjusted position */}
+                <div className={`absolute bottom-3 right-3 flex gap-1 transition-opacity ${isSelectionMode ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'}`}>
 
                    {/* Favorite Button */}
                    {viewMode !== 'trash' && (
@@ -141,21 +206,7 @@ export default function NotesList({
                     </button>
                   )}
 
-                  {/* Archive Button (not available in Trash) */}
-                  {viewMode !== 'trash' && (
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        if (note.isLocked) return;
-                        onArchiveNote(note.id, !note.isArchived);
-                      }}
-                      disabled={note.isLocked}
-                      className={`btn btn-sm btn-circle btn-ghost ${note.isLocked ? 'opacity-50 cursor-not-allowed text-slate-600' : 'text-slate-400 hover:text-cyan-400'}`}
-                      title={note.isLocked ? "Unlock to Archive" : (note.isArchived ? "Unarchive" : "Archive")}
-                    >
-                      {note.isArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
-                    </button>
-                  )}
+                  {/* Redundant Archive Button Removed (it was duplicated in original file) */}
 
                 {/* Restore Button (only in Trash) */}
                 {viewMode === 'trash' && (
@@ -184,37 +235,39 @@ export default function NotesList({
                 </button>
               </div>
 
-              {/* Title */}
-                 <h3 className={`text-lg font-semibold text-slate-100 mb-2 pr-8 ${isSelectionMode ? 'pl-8' : ''}`}>{note.title}</h3>
+                {/* Title - Add spacing for badges */}
+                <h3 className={`text-lg font-semibold text-slate-100 mb-2 pr-24 ${isSelectionMode ? 'pl-8' : ''}`}>{note.title}</h3>
 
               {/* Transcript Preview */}
                  <p className={`text-sm text-slate-400 line-clamp-3 mb-3 ${isSelectionMode ? 'pl-8' : ''}`}>{note.transcript}</p>
 
-              {/* Tags */}
-              {note.tags && note.tags.length > 0 && (
-                   <div className={`flex flex-wrap gap-2 mb-3 ${isSelectionMode ? 'pl-8' : ''}`}>
-                  {note.tags.map(tag => (
-                    <span
-                      key={tag}
-                      className="badge badge-sm glass text-cyan-300 border-cyan-400/30"
-                    >
-                      <Tag className="w-3 h-3 mr-1" />
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
+                {/* Tags and Metadata */}
+                <div className={`flex flex-wrap items-center gap-3 mb-3 ${isSelectionMode ? 'pl-8' : ''}`}>
+                  {/* Timestamp */}
+                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <Clock className="w-3 h-3" />
+                    {new Date(note.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </div>
 
-              {/* Timestamp */}
-                 <div className={`flex items-center gap-1 text-xs text-slate-500 ${isSelectionMode ? 'pl-8' : ''}`}>
-                <Clock className="w-3 h-3" />
-                {new Date(note.createdAt).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: '2-digit',
-                })}
-              </div>
+                  {note.tags && note.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {note.tags.map(tag => (
+                        <span
+                          key={tag}
+                          className="badge badge-sm glass text-cyan-300 border-cyan-400/30"
+                        >
+                          <Tag className="w-3 h-3 mr-1" />
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
             </motion.div>
             );
           })}

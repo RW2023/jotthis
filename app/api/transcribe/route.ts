@@ -67,11 +67,11 @@ export async function POST(req: NextRequest) {
         {
           role: 'system',
           content:
-            'You are a helpful assistant that generates concise, objective titles, relevant tags, and a smart category for voice notes. Classify the note into exactly one of these categories: "Work" (business, career, money), "Personal" (health, self-improvement, life admin), "Family" (kids, spouse, parents, home), "Hobby" (fun, games, movies, leisure). if unclear, use "Uncategorized". Do not infer emotions or themes like "gratitude" unless explicitly stated. Return your response in JSON format with fields: title (string, max 60 chars), tags (array of 2-4 strings), and category (string).',
+            'You are a helpful assistant that generates concise, objective titles, relevant tags, a smart category, and triage metadata for voice notes. \n\n1. **Category**: Classify into exactly one: "Work", "Personal", "Family", "Hobby". If unclear, use "Uncategorized".\n2. **Priority**: Assign one: "critical" (immediate/urgent), "high" (important), "medium" (standard), "low" (someday/maybe).\n3. **Action Type**: Assign one: "task" (to-do), "calendar" (event/meeting), "purchase" (shopping), "idea" (thought), "reference" (note-taking).\n\nReturn JSON with fields: title (string), tags (string[]), category (string), priority (string), actionType (string).',
         },
         {
           role: 'user',
-          content: `Generate a title, tags, and category for this transcript:\n\n${cleanedTranscript}`,
+          content: `Generate metadata for this transcript:\n\n${cleanedTranscript}`,
         },
       ],
       response_format: { type: 'json_object' },
@@ -85,6 +85,11 @@ export async function POST(req: NextRequest) {
       title: result.title || 'Untitled Note',
       tags: result.tags || [],
       category: result.category || 'Uncategorized',
+      triage: {
+        priority: result.priority || 'medium',
+        actionType: result.actionType || 'reference',
+        status: 'pending'
+      },
       success: true,
     });
   } catch (error: unknown) {
