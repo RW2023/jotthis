@@ -91,7 +91,7 @@ export async function bulkUpdateVoiceNotes(
   noteIds.forEach(noteId => {
     const noteRef = doc(db, `users/${userId}/transcriptions`, noteId);
     // Convert Dates to Timestamps if present in updates
-    const firestoreUpdates: any = { ...updates, updatedAt: Timestamp.now() };
+    const firestoreUpdates: Record<string, unknown> = { ...updates, updatedAt: Timestamp.now() };
 
     // Handle deletedAt special case
     if (updates.deletedAt && updates.deletedAt instanceof Date) {

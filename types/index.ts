@@ -3,6 +3,7 @@ export interface VoiceNote {
   userId: string;
   title: string;
   transcript: string;
+  originalTranscript?: string;
   tags: string[];
   audioUrl?: string;
   createdAt: Date;

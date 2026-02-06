@@ -42,6 +42,25 @@ export async function POST(req: NextRequest) {
     });
 
     const transcript = transcription.text;
+    
+    // --- Smart Note Cleanup ---
+    // Use GPT-4o-mini to clean up the transcript (remove filler words, fix grammar)
+    const cleanupCompletion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert editor. Clean up the following transcript by removing filler words (um, uh, like, you know), falsestarts, and fixing grammar. Keep the tone and voice authentic. Do not summarize. Return ONLY the cleaned text.',
+        },
+        {
+          role: 'user',
+          content: transcript,
+        },
+      ],
+    });
+
+    const cleanedTranscript = cleanupCompletion.choices[0].message.content || transcript;
+
 
 
 
@@ -65,7 +84,8 @@ export async function POST(req: NextRequest) {
     const result = JSON.parse(completion.choices[0].message.content || '{}');
 
     return NextResponse.json({
-      transcript,
+      transcript: cleanedTranscript,
+      originalTranscript: transcript,
       title: result.title || 'Untitled Note',
       tags: result.tags || [],
       success: true,
