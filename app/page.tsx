@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Loader2, LogOut, Settings, Clock, Tag, Heart, CheckSquare, Square, Trash2, Archive, X, Lock, Unlock, ArrowDownUp } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import { useAuth } from '@/components/AuthProvider';
-import { VoiceNote } from '@/types';
+import { VoiceNote, NoteCategory } from '@/types';
 import NotesList from '@/components/NotesList';
 import NoteDetail from '@/components/NoteDetail';
 import AuthModal from '@/components/AuthModal';
@@ -167,7 +167,7 @@ function HomeContent() {
               title: data.title,
               transcript: data.transcript,
               originalTranscript: data.originalTranscript,
-              smartCategory: (data.category ? data.category.charAt(0).toUpperCase() + data.category.slice(1).toLowerCase() : 'Uncategorized') as any,
+              smartCategory: (data.category ? data.category.charAt(0).toUpperCase() + data.category.slice(1).toLowerCase() : 'Uncategorized') as NoteCategory,
               triage: data.triage,
               tags: data.tags,
               audioUrl, // Use the client-side uploaded URL
@@ -179,7 +179,7 @@ function HomeContent() {
               title: data.title,
               transcript: data.transcript,
               originalTranscript: data.originalTranscript,
-              smartCategory: (data.category ? data.category.charAt(0).toUpperCase() + data.category.slice(1).toLowerCase() : 'Uncategorized') as any,
+              smartCategory: (data.category ? data.category.charAt(0).toUpperCase() + data.category.slice(1).toLowerCase() : 'Uncategorized') as NoteCategory,
               triage: {
                 ...data.triage,
                 priority: data.triage?.priority?.toLowerCase() || 'medium',

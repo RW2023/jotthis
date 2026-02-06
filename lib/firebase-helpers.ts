@@ -92,7 +92,7 @@ export async function updateVoiceNote(
   const cleanUpdates = Object.entries(updates).reduce((acc, [key, value]) => {
     if (value !== undefined) acc[key] = value;
     return acc;
-  }, {} as Record<string, any>);
+  }, {} as Record<string, unknown>);
 
   await updateDoc(noteRef, {
     ...cleanUpdates,
