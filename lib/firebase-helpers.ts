@@ -78,6 +78,29 @@ export async function toggleFavoriteVoiceNote(
 }
 
 /**
+ * Update specific fields of a voice note
+ */
+export async function updateVoiceNote(
+  userId: string,
+  noteId: string,
+  updates: Partial<VoiceNote>
+): Promise<void> {
+  const noteRef = doc(db, `users/${userId}/transcriptions`, noteId);
+  const { updateDoc } = await import('firebase/firestore');
+  
+  // Filter out undefined values to avoid Firestore errors
+  const cleanUpdates = Object.entries(updates).reduce((acc, [key, value]) => {
+    if (value !== undefined) acc[key] = value;
+    return acc;
+  }, {} as Record<string, any>);
+
+  await updateDoc(noteRef, {
+    ...cleanUpdates,
+    updatedAt: Timestamp.now(),
+  });
+}
+
+/**
  * Bulk update voice notes
  */
 export async function bulkUpdateVoiceNotes(

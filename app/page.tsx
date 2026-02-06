@@ -27,6 +27,7 @@ import {
   uploadAudio,
   updateNoteInsights,
   toggleFavoriteVoiceNote,
+  updateVoiceNote,
   toggleLockVoiceNote,
   bulkUpdateVoiceNotes,
   toggleTriageStatus
@@ -643,21 +644,45 @@ function HomeContent() {
                 setNotes(prev => prev.map(n => (n.id === updatedNote.id ? updatedNote : n)));
                 setSelectedNote(updatedNote);
 
-                // Persist insights to Firestore if they changed
-                if (user && updatedNote.insights) {
+                if (user) {
                   try {
-                    // Check each insight type and persist to Firestore
-                    if (updatedNote.insights.actionItems && updatedNote.insights.actionItems.length > 0) {
-                      await updateNoteInsights(user.uid, updatedNote.id, 'actionItems', updatedNote.insights.actionItems);
-                    }
-                    if (updatedNote.insights.contentIdeas && updatedNote.insights.contentIdeas.length > 0) {
-                      await updateNoteInsights(user.uid, updatedNote.id, 'contentIdeas', updatedNote.insights.contentIdeas);
-                    }
-                    if (updatedNote.insights.researchPointers && updatedNote.insights.researchPointers.length > 0) {
-                      await updateNoteInsights(user.uid, updatedNote.id, 'research', updatedNote.insights.researchPointers);
+                    await updateVoiceNote(user.uid, updatedNote.id, {
+                      smartCategory: updatedNote.smartCategory,
+                      isShared: updatedNote.isShared,
+                      shareToken: updatedNote.shareToken,
+                      triage: updatedNote.triage,
+                    });
+                  } catch (e) {
+                    console.error('Failed to persist note update', e);
+                  }
+                }
+
+                if (user) {
+                  try {
+                    // Persist core note updates (category, share token, etc.)
+                    await updateVoiceNote(user.uid, updatedNote.id, {
+                      smartCategory: updatedNote.smartCategory,
+                      tags: updatedNote.tags,
+                      isShared: updatedNote.isShared,
+                      shareToken: updatedNote.shareToken,
+                    });
+
+                    // Persist insights to Firestore if they changed
+                    if (updatedNote.insights) {
+                      // Check each insight type and persist to Firestore
+                      if (updatedNote.insights.actionItems && updatedNote.insights.actionItems.length > 0) {
+                        await updateNoteInsights(user.uid, updatedNote.id, 'actionItems', updatedNote.insights.actionItems);
+                      }
+                      if (updatedNote.insights.contentIdeas && updatedNote.insights.contentIdeas.length > 0) {
+                        await updateNoteInsights(user.uid, updatedNote.id, 'contentIdeas', updatedNote.insights.contentIdeas);
+                      }
+                      if (updatedNote.insights.researchPointers && updatedNote.insights.researchPointers.length > 0) {
+                        await updateNoteInsights(user.uid, updatedNote.id, 'research', updatedNote.insights.researchPointers);
+                      }
                     }
                   } catch (error) {
-                    console.error('Failed to save insights to Firestore:', error);
+                    console.error('Failed to save updates to Firestore:', error);
+                    toast.error('Failed to save changes');
                   }
                 }
               }}
