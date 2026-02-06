@@ -160,6 +160,7 @@ function HomeContent() {
               userId: user.uid,
               title: data.title,
               transcript: data.transcript,
+              originalTranscript: data.originalTranscript,
               tags: data.tags,
               audioUrl, // Use the client-side uploaded URL
             });
@@ -169,6 +170,7 @@ function HomeContent() {
               userId: user.uid,
               title: data.title,
               transcript: data.transcript,
+              originalTranscript: data.originalTranscript,
               tags: data.tags,
               audioUrl,
               createdAt: new Date(),
