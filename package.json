@@ -12,6 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@serwist/next": "^9.5.4",
     "autoprefixer": "^10.4.24",
     "crypto-js": "^4.2.0",
     "daisyui": "^5.5.17",
@@ -23,7 +24,8 @@
     "openai": "^6.17.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-hot-toast": "^2.6.0"
+    "react-hot-toast": "^2.6.0",
+    "serwist": "^9.5.4"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

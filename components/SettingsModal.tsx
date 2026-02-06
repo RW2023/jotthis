@@ -60,6 +60,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-title"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-slate-900/50">
@@ -68,13 +71,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <Settings className="w-5 h-5 text-cyan-400" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-100">Settings</h2>
+                  <h2 id="settings-title" className="text-lg font-bold text-slate-100">Settings</h2>
                   <p className="text-xs text-slate-400">Configure your preferences</p>
                 </div>
               </div>
               <button
                 onClick={onClose}
                 className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-full transition-colors"
+                aria-label="Close settings"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -136,6 +140,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <button
                     onClick={() => setShowKey(!showKey)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    aria-label={showKey ? "Hide API key" : "Show API key"}
                   >
                     {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -168,6 +173,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       onClick={handleClear}
                       className="btn btn-ghost btn-square text-red-400 hover:bg-red-500/10"
                       title="Clear Key"
+                      aria-label="Clear API Key"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

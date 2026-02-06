@@ -92,14 +92,14 @@ export default function NoteDetail({
 
       const data = await response.json();
 
-      console.log('API Response:', data);
+
 
       if (data.success) {
         // Map 'research' to 'researchPointers' to match VoiceNote type
         const stateKey = type === 'research' ? 'researchPointers' : type;
         const updatedInsights = { ...insights, [stateKey]: data.insights };
 
-        console.log('Updating insights state:', updatedInsights);
+
         setInsights(updatedInsights);
 
         if (data.insights.length === 0) {
@@ -171,7 +171,7 @@ export default function NoteDetail({
     >
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <button onClick={onBack} className="btn btn-circle btn-ghost text-slate-400">
+        <button onClick={onBack} className="btn btn-circle btn-ghost text-slate-400" aria-label="Go back">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
@@ -204,6 +204,7 @@ export default function NoteDetail({
               onClick={() => onLock(note.id, !note.isLocked)}
               className={`btn btn-ghost btn-circle ${note.isLocked ? 'text-amber-500 hover:text-amber-400' : 'text-slate-400 hover:text-amber-500'}`}
               title={note.isLocked ? "Unlock Note" : "Lock Note"}
+              aria-label={note.isLocked ? "Unlock Note" : "Lock Note"}
             >
               {note.isLocked ? <Lock className="w-5 h-5" /> : <Unlock className="w-5 h-5" />}
             </button>
@@ -215,6 +216,7 @@ export default function NoteDetail({
               disabled={!!note.isLocked}
               className={`btn btn-ghost btn-circle ${note.isLocked ? 'opacity-50 cursor-not-allowed text-slate-600' : 'text-slate-400 hover:text-cyan-400'}`}
               title={note.isLocked ? "Unlock to Archive" : (note.isArchived ? "Unarchive" : "Archive")}
+              aria-label={note.isLocked ? "Unlock to Archive" : (note.isArchived ? "Unarchive" : "Archive")}
             >
               {note.isArchived ? <ArchiveRestore className="w-5 h-5" /> : <Archive className="w-5 h-5" />}
             </button>
@@ -246,6 +248,7 @@ export default function NoteDetail({
           disabled={!!note.isLocked}
           className={`btn btn-ghost btn-circle ${note.isLocked ? 'opacity-50 cursor-not-allowed text-slate-600' : (isTrash ? 'text-red-500 hover:bg-red-500/10' : 'text-slate-400 hover:text-red-400')}`}
           title={note.isLocked ? "Unlock to Delete" : (isTrash ? "Delete Permanently" : "Move to Trash")}
+          aria-label={note.isLocked ? "Unlock to Delete" : (isTrash ? "Delete Permanently" : "Move to Trash")}
         >
           <Trash2 className="w-5 h-5" />
         </button>
@@ -265,6 +268,7 @@ export default function NoteDetail({
               <button
                 onClick={() => setShowShareModal(false)}
                 className="absolute top-4 right-4 text-slate-400 hover:text-white"
+                aria-label="Close modal"
               >
                 ✕
               </button>
@@ -291,6 +295,7 @@ export default function NoteDetail({
                   <button
                     onClick={copyToClipboard}
                     className="btn btn-square btn-sm btn-ghost hover:bg-white/10 text-cyan-400"
+                      aria-label="Copy link"
                   >
                     {copySuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   </button>
