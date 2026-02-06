@@ -5,10 +5,8 @@ import OpenAI from 'openai';
 import { adminStorage } from '@/lib/firebase-admin';
 import { SHA256 } from 'crypto-js';
 
-// Init OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// OpenAI client is initialized lazily inside the handler
+
 
 export async function POST(req: Request) {
   try {
@@ -32,7 +30,9 @@ export async function POST(req: Request) {
     }
     
     // Create new client if custom key provided (and it's not the server env key)
-    const client = apiKey === process.env.OPENAI_API_KEY ? openai : new OpenAI({ apiKey });
+    const client = apiKey === process.env.OPENAI_API_KEY 
+      ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) 
+      : new OpenAI({ apiKey });
 
     // 1. Generate Hash for Caching
     // Hash based on text + voice to allow different versions
