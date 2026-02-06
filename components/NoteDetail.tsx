@@ -38,6 +38,7 @@ export default function NoteDetail({
   const [insights, setInsights] = useState<VoiceNote['insights']>(note.insights || {});
   const [showShareModal, setShowShareModal] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [copyTranscriptSuccess, setCopyTranscriptSuccess] = useState(false);
   const [generatingLink, setGeneratingLink] = useState(false);
 
   const handleShare = async () => {
@@ -62,7 +63,7 @@ export default function NoteDetail({
     }
   };
 
-  const copyToClipboard = () => {
+  const copyShareLink = () => {
     if (!note.shareToken) return;
 
     const url = `${window.location.origin}/share/${note.id}?token=${note.shareToken}`;
@@ -70,6 +71,13 @@ export default function NoteDetail({
     setCopySuccess(true);
     setTimeout(() => setCopySuccess(false), 2000);
     toast.success('Link copied to clipboard!');
+  };
+
+  const copyTranscript = () => {
+    navigator.clipboard.writeText(note.transcript);
+    setCopyTranscriptSuccess(true);
+    setTimeout(() => setCopyTranscriptSuccess(false), 2000);
+    toast.success('Transcript copied to clipboard!');
   };
 
   const extractInsights = async (type: InsightType) => {
@@ -293,7 +301,7 @@ export default function NoteDetail({
                     </p>
                   </div>
                   <button
-                    onClick={copyToClipboard}
+                      onClick={copyShareLink}
                     className="btn btn-square btn-sm btn-ghost hover:bg-white/10 text-cyan-400"
                       aria-label="Copy link"
                   >
@@ -363,9 +371,19 @@ export default function NoteDetail({
 
       {/* Transcript */}
       <div className="glass p-6 rounded-xl mb-6">
-        <h2 className="text-xl font-semibold text-slate-200 mb-3 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-cyan-400" />
-          Transcript
+        <h2 className="text-xl font-semibold text-slate-200 mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-cyan-400" />
+            Transcript
+          </div>
+          <button
+            onClick={copyTranscript}
+            className="btn btn-ghost btn-sm text-slate-400 hover:text-cyan-400 gap-2"
+            title="Copy transcript"
+          >
+            {copyTranscriptSuccess ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+            <span className="text-xs">Copy</span>
+          </button>
         </h2>
         <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{note.transcript}</p>
       </div>
