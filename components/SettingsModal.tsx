@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, X, Key, Save, Trash2, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Settings, X, Key, Save, Trash2, ShieldCheck, Eye, EyeOff, Volume2 } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -11,24 +11,30 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [apiKey, setApiKey] = useState('');
+  const [voice, setVoice] = useState('alloy');
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    // Load saved key from localStorage
+    // Load saved key and voice from localStorage
     const savedKey = localStorage.getItem('openai_api_key');
-    if (savedKey) {
-      setApiKey(savedKey);
-    }
+    if (savedKey) setApiKey(savedKey);
+
+    const savedVoice = localStorage.getItem('openai_tts_voice');
+    if (savedVoice) setVoice(savedVoice);
   }, [isOpen]);
 
   const handleSave = () => {
+    // Save Voice (Always save if modal is saved, key is optional but voice has default)
+    localStorage.setItem('openai_tts_voice', voice);
+
     if (apiKey.trim()) {
       localStorage.setItem('openai_api_key', apiKey.trim());
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-      setTimeout(onClose, 1000);
     }
+
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    setTimeout(onClose, 1000);
   };
 
   const handleClear = () => {
@@ -76,6 +82,35 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             {/* Content */}
             <div className="p-6 space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-purple-500/10 rounded-lg mt-1">
+                    <Volume2 className="w-4 h-4 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-200">Voice Preference</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Choose the AI voice for reading your notes.
+                    </p>
+                  </div>
+                </div>
+
+                <select
+                  value={voice}
+                  onChange={(e) => setVoice(e.target.value)}
+                  className="select select-bordered w-full bg-slate-950 border-slate-800 focus:border-cyan-500/50 text-sm"
+                >
+                  <option value="alloy">Alloy (Neutral)</option>
+                  <option value="echo">Echo (Male)</option>
+                  <option value="fable">Fable (British)</option>
+                  <option value="onyx">Onyx (Deep Male)</option>
+                  <option value="nova">Nova (Female)</option>
+                  <option value="shimmer">Shimmer (Clear Female)</option>
+                </select>
+              </div>
+
+              <div className="border-t border-slate-800 my-4"></div>
+
               {/* API Key Section */}
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
@@ -109,7 +144,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <div className="flex gap-2">
                   <button
                     onClick={handleSave}
-                    disabled={!apiKey.trim()}
                     className={`btn flex-1 gap-2 ${
                       saved 
                         ? 'btn-success text-white' 
@@ -119,12 +153,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     {saved ? (
                       <>
                         <ShieldCheck className="w-4 h-4" />
-                        Saved Securely
+                        Saved
                       </>
                     ) : (
                       <>
                         <Save className="w-4 h-4" />
-                        Save Key
+                          Save Settings
                       </>
                     )}
                   </button>

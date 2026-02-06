@@ -1,10 +1,9 @@
-'use client';
-
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Sparkles, Loader2, ListChecks, Lightbulb, Search, Tag, Share2, Copy, Check, Archive, ArchiveRestore, RefreshCcw, Trash2, Heart, Lock, Unlock } from 'lucide-react';
 import { VoiceNote } from '@/types';
+import TTSPlayer from './TTSPlayer';
 
 import { updateNoteShareToken } from '@/lib/firebase-helpers';
 
@@ -188,6 +187,13 @@ export default function NoteDetail({
             })}
           </p>
         </div>
+
+        {!isTrash && (
+          <TTSPlayer
+            text={note.transcript}
+            userId={note.userId}
+          />
+        )}
       </div>
 
       <div className="flex gap-2">

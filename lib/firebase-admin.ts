@@ -1,5 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 
 const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY 
   ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY) 
@@ -10,6 +11,7 @@ if (!getApps().length && serviceAccount) {
     initializeApp({
         credential: cert(serviceAccount),
         projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
   } catch (e) {
       console.error('[AdminInit] Failed to initialize with cert:', e);
@@ -20,6 +22,7 @@ if (!getApps().length && serviceAccount) {
     try {
         initializeApp({
             projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+            storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
         });
     } catch (e) {
         console.error("Failed to initialize firebase-admin even without cert", e);
@@ -27,3 +30,4 @@ if (!getApps().length && serviceAccount) {
 }
 
 export const adminDb = getFirestore();
+export const adminStorage = getStorage();
