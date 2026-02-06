@@ -3,6 +3,7 @@ import { AuthProvider } from '@/components/AuthProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://jotthis.app'),
   title: 'JotThis - AI Voice Notes',
   description: 'Transform voice notes into structured insights with AI',
   manifest: '/manifest.json',
