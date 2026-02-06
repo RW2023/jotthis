@@ -31,6 +31,7 @@
 - **Smart Tagging**: AI organizes your tags into semantic clusters (e.g., "Work", "Ideas") with color-coding.
 
 ### ⚡ Productivity Tools
+- **Text-to-Speech**: Listen to your notes with premium AI voices (Alloy, Echo, etc.) and smart caching for instant playback.
 - **Lock Notes**: Prevent accidental deletion of critical information.
 - **Note Sharing**: Generate secure, public links to share notes with anyone.
 - **Multiselect**: Bulk actions to Favoritie, Archive, or Trash multiple notes at once.
