@@ -69,7 +69,7 @@ export default function NotesList({
             const isSelected = selectedNoteIds?.has(note.id);
 
               const isPriorityCritical = note.triage?.priority === 'critical';
-              const isPriorityHigh = note.triage?.priority === 'high';
+
 
             return (
             <motion.div

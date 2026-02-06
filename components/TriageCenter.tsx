@@ -1,6 +1,6 @@
 import React from 'react';
-import { VoiceNote, NotePriority, ActionType } from '@/types';
-import { AlertCircle, Calendar, ShoppingCart, Lightbulb, CheckSquare, BookOpen, Clock } from 'lucide-react';
+import { VoiceNote } from '@/types';
+import { AlertCircle, Calendar, ShoppingCart, Lightbulb, CheckSquare } from 'lucide-react';
 
 interface TriageCenterProps {
   notes: VoiceNote[];
