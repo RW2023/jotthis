@@ -82,9 +82,10 @@ export default function TTSPlayer({ text, voice = 'alloy', userId }: TTSPlayerPr
       await audio.play();
       setIsPlaying(true);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('TTS Error:', error);
-      toast.error('Failed to play audio');
+      // Show specific error if available
+      toast.error(error.message || 'Failed to play audio');
     } finally {
       setIsLoading(false);
     }
