@@ -46,6 +46,13 @@ vi.mock('react-hot-toast', () => ({
   toast: { success: vi.fn(), error: mockToastError },
 }));
 
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockPush,
+  }),
+}));
+
 import { AuthProvider, useAuth } from '@/components/AuthProvider';
 
 describe('AuthProvider', () => {
@@ -171,7 +178,7 @@ describe('AuthProvider', () => {
   });
 
   describe('signOut', () => {
-    it('should call firebaseSignOut', async () => {
+    it('should call firebaseSignOut and redirect to home', async () => {
       mockFirebaseSignOut.mockResolvedValueOnce(undefined);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -181,6 +188,7 @@ describe('AuthProvider', () => {
       });
 
       expect(mockFirebaseSignOut).toHaveBeenCalledOnce();
+      expect(mockPush).toHaveBeenCalledWith('/');
     });
   });
 
