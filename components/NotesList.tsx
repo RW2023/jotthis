@@ -54,7 +54,7 @@ export default function NotesList({
       <h2 className="text-2xl font-bold text-slate-200 mb-4">Your Notes</h2>
 
       <motion.div
-        className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+        className="grid gap-4 md:grid-cols-2 lg:grid-cols-1"
         layout
       >
         <AnimatePresence mode="popLayout">

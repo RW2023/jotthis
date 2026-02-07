@@ -11,6 +11,7 @@ interface UseVoiceRecorderReturn {
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<Blob | null>;
   error: string | null;
+  analyserNode: AnalyserNode | null;
 }
 
 export function useVoiceRecorder(): UseVoiceRecorderReturn {
@@ -18,6 +19,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [volume, setVolume] = useState(0);
+  const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -44,6 +46,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
       
       audioContextRef.current = audioContext;
       analyserRef.current = analyser;
+      setAnalyserNode(analyser);
       sourceRef.current = source;
       
       // Start visualization loop
@@ -111,6 +114,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
         }
         if (audioContextRef.current) {
           audioContextRef.current.close();
+          audioContextRef.current = null;
         }
         
         // Clear timer
@@ -121,6 +125,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
 
         setStatus('idle');
         setVolume(0);
+        setAnalyserNode(null);
         resolve(blob);
       };
 
@@ -135,5 +140,6 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
     startRecording,
     stopRecording,
     error,
+    analyserNode,
   };
 }
