@@ -640,6 +640,8 @@ function HomeContent() {
                 if (user) {
                   try {
                     await updateVoiceNote(user.uid, updatedNote.id, {
+                      title: updatedNote.title,
+                      transcript: updatedNote.transcript,
                       smartCategory: updatedNote.smartCategory,
                       tags: updatedNote.tags,
                       isShared: updatedNote.isShared,

@@ -21,8 +21,6 @@ interface NoteDetailProps {
 
 type InsightType = 'actionItems' | 'contentIdeas' | 'research';
 
-
-
 export default function NoteDetail({
   note,
   onBack,
@@ -34,6 +32,9 @@ export default function NoteDetail({
   onLock,
   isTrash
 }: NoteDetailProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(note.title);
+  const [editedTranscript, setEditedTranscript] = useState(note.transcript);
   const [loadingInsight, setLoadingInsight] = useState<InsightType | null>(null);
   const [insights, setInsights] = useState<VoiceNote['insights']>(note.insights || {});
   const [showShareModal, setShowShareModal] = useState(false);
@@ -78,6 +79,36 @@ export default function NoteDetail({
     setCopyTranscriptSuccess(true);
     setTimeout(() => setCopyTranscriptSuccess(false), 2000);
     toast.success('Transcript copied to clipboard!');
+  };
+
+  const handleSave = async () => {
+    if (!editedTitle.trim()) {
+      toast.error('Title cannot be empty');
+      return;
+    }
+    if (!editedTranscript.trim()) {
+      toast.error('Transcript cannot be empty');
+      return;
+    }
+
+    try {
+      await onUpdate({
+        ...note,
+        title: editedTitle.trim(),
+        transcript: editedTranscript.trim(),
+      });
+      setIsEditing(false);
+      toast.success('Note updated!');
+    } catch (error) {
+      console.error('Error saving note:', error);
+      toast.error('Failed to save changes');
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedTitle(note.title);
+    setEditedTranscript(note.transcript);
+    setIsEditing(false);
   };
 
   const extractInsights = async (type: InsightType) => {
@@ -183,7 +214,18 @@ export default function NoteDetail({
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-slate-100">{note.title}</h1>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-2xl font-bold text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
+              placeholder="Note Title"
+              autoFocus
+            />
+          ) : (
+              <h1 className="text-3xl font-bold text-slate-100">{note.title}</h1>
+          )}
           <p className="text-sm text-slate-500 mt-1">
             {new Date(note.createdAt).toLocaleDateString('en-US', {
               weekday: 'long',
@@ -236,6 +278,17 @@ export default function NoteDetail({
               <Share2 className="w-5 h-5" />
               <span className="hidden sm:inline">Share</span>
             </button>
+
+            {!isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="btn btn-ghost text-slate-400 hover:text-cyan-400 gap-2"
+                title="Edit Note"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span className="hidden sm:inline">Edit</span>
+              </button>
+            )}
           </>
         )}
 
@@ -385,8 +438,36 @@ export default function NoteDetail({
             <span className="text-xs">Copy</span>
           </button>
         </h2>
-        <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{note.transcript}</p>
+        {isEditing ? (
+          <textarea
+            value={editedTranscript}
+            onChange={(e) => setEditedTranscript(e.target.value)}
+            className="w-full h-64 bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-slate-300 leading-relaxed focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all resize-none"
+            placeholder="Note content..."
+          />
+        ) : (
+            <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{note.transcript}</p>
+        )}
       </div>
+
+      {
+        isEditing && (
+          <div className="flex justify-end gap-3 mb-6">
+            <button
+              onClick={handleCancel}
+              className="btn btn-ghost text-slate-400"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="btn bg-cyan-500 hover:bg-cyan-400 text-white border-none shadow-lg shadow-cyan-500/20"
+            >
+              Save Changes
+            </button>
+      </div>
+        )
+      }
 
       {/* Insight Extraction Buttons */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

@@ -125,7 +125,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   <div className="w-full border-t border-slate-300"></div>
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-2 text-slate-500">OR</span>
+                  <span className="bg-base-100 px-2 text-slate-500">OR</span>
                 </div>
               </div>
 
