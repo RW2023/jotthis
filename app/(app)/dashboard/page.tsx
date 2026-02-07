@@ -506,6 +506,7 @@ function HomeContent() {
                     whileTap={{ scale: 0.95 }}
                     onClick={handleRecord}
                     disabled={isProcessing}
+                    aria-label={status === 'recording' ? 'Stop recording' : 'Start recording'}
                     className={`btn btn-lg btn-circle glass glass-hover relative group 
                       ${status === 'recording' ? 'btn-error w-24 h-24' : 'btn-primary w-20 h-20'}
                       shadow-xl shadow-cyan-500/10 border-slate-700/50
