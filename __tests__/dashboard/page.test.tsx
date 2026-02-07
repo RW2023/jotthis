@@ -72,10 +72,10 @@ describe('Dashboard Page', () => {
     render(<Home />);
 
     // Check for "JotThis" header
-    expect(screen.getByText('JotThis')).toBeDefined();
+    expect((await screen.findAllByText('JotThis')).length).toBeGreaterThan(0);
 
-    // Check for "Tap to record" text
-    expect(screen.getByText(/Tap to record/i)).toBeDefined();
+    // Check for "Start recording" button (accessible name)
+    expect(screen.getByRole('button', { name: /Start recording/i })).toBeDefined();
 
     // Check for Notes List (implied by "Test Note" presence)
     expect(screen.getByText('Test Note')).toBeDefined();

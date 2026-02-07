@@ -210,7 +210,7 @@ export default function NoteDetail({
     >
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <button onClick={onBack} className="btn btn-circle btn-ghost text-slate-400" aria-label="Go back">
+        <button onClick={onBack} className="btn btn-circle btn-ghost text-slate-400 lg:hidden" aria-label="Go back">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex-1">
