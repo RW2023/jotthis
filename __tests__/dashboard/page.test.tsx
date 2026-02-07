@@ -54,11 +54,11 @@ const mockNotes = [
 ];
 
 vi.mock('@/components/NotesProvider', () => ({
-  useNotes: () => ({
+  useNotes: vi.fn(() => ({
     notes: mockNotes,
     setNotes: vi.fn(),
     loading: false,
-  }),
+  })),
   NotesProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>
 }));
 
@@ -83,17 +83,15 @@ describe('Dashboard Page', () => {
 
   it('renders "No notes yet" when notes list is empty', async () => {
     // Override useNotes for this specific test
-    vi.mocked(await import('@/components/NotesProvider')).useNotes.mockReturnValueOnce({
+    const { useNotes } = await import('@/components/NotesProvider');
+    vi.mocked(useNotes).mockReturnValue({
       notes: [],
       setNotes: vi.fn(),
       loading: false,
     } as any);
 
     render(<Home />);
-    
-    // We expect the "No notes yet" message or the empty state illustration text
-    // Adjust logic based on NotesList implementation of empty state
-    // Let's assume standard empty state text
+
     expect(screen.getByText(/Tap the microphone/i)).toBeDefined();
   });
 });
