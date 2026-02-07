@@ -132,6 +132,17 @@ export default function TagCloudPage() {
     item.tag.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const filteredClusters = tagClusters.map(cluster => {
+    const themeMatches = cluster.theme.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchingTags = cluster.tags.filter(tag =>
+      tag.toLowerCase().includes(searchQuery.toLowerCase()) || themeMatches
+    );
+    return {
+      ...cluster,
+      tags: matchingTags
+    };
+  }).filter(cluster => cluster.tags.length > 0);
+
   const filteredNotes = selectedTag 
     ? notes.filter(note => note.tags?.includes(selectedTag)) 
     : [];
@@ -246,7 +257,7 @@ export default function TagCloudPage() {
 
         {/* Smart Clusters View */}
         <AnimatePresence>
-          {isSmartView && tagClusters.map((cluster, idx) => (
+          {isSmartView && filteredClusters.map((cluster, idx) => (
             <motion.div
               key={cluster.theme}
               initial={{ opacity: 0, y: 20 }}
@@ -293,7 +304,11 @@ export default function TagCloudPage() {
                 })}
               </div>
             </motion.div>
+
           ))}
+          {isSmartView && filteredClusters.length === 0 && (
+            <div className="text-slate-500 py-8 text-center italic">No smart groups found matching &quot;{searchQuery}&quot;</div>
+          )}
         </AnimatePresence>
 
         {/* Results Sidebar */}

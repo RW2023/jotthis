@@ -412,7 +412,10 @@ function HomeContent() {
         const match = (
           note.title?.toLowerCase().includes(q) ||
           note.transcript?.toLowerCase().includes(q) ||
-          note.tags?.some(tag => tag.toLowerCase().includes(q))
+          note.tags?.some(tag => tag.toLowerCase().includes(q)) ||
+          note.smartCategory?.toLowerCase().includes(q) ||
+          note.triage?.priority?.toLowerCase().includes(q) ||
+          note.triage?.actionType?.toLowerCase().includes(q)
         );
         if (!match) return false;
       }
