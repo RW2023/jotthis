@@ -72,7 +72,7 @@ describe('Dashboard Page', () => {
     render(<Home />);
 
     // Check for "JotThis" header
-    expect(screen.getByText('JotThis')).toBeDefined();
+    expect((await screen.findAllByText('JotThis')).length).toBeGreaterThan(0);
 
     // Check for "Tap to record" text
     expect(screen.getByText(/Tap to record/i)).toBeDefined();
