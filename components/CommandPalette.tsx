@@ -70,7 +70,7 @@ export const CommandPalette = () => {
                         {notes.map((note) => (
                             <Command.Item
                                 key={note.id}
-                                value={`${note.title} ${note.transcript} ${note.tags?.join(' ')}`}
+                                value={`${note.title} ${note.transcript} ${note.tags?.join(' ')} ${note.smartCategory} ${note.triage?.priority} ${note.triage?.actionType}`}
                                 onSelect={() => runCommand(() => router.push(`/dashboard?noteId=${note.id}`))}
                                 className="flex items-center gap-2 px-2 py-2.5 rounded-lg text-slate-200 hover:bg-slate-700/50 hover:text-white cursor-pointer transition-colors aria-selected:bg-cyan-500/20 aria-selected:text-cyan-400"
                             >
