@@ -601,7 +601,7 @@ function HomeContent() {
 
             {/* Notes List */}
             <div className="flex-1 overflow-y-auto custom-scrollbar px-2 sm:px-4 pb-24 lg:pb-4">
-              {filteredNotes.length === 0 ? (
+              {filteredNotes.length === 0 && notes.length > 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 text-slate-500">
                   <p>No notes found</p>
                 </div>
