@@ -420,6 +420,8 @@ function HomeContent() {
         setViewMode={setViewMode}
         isFocusMode={isFocusMode}
         setIsFocusMode={setIsFocusMode}
+        isSelectionMode={isSelectionMode}
+        onToggleSelectionMode={handleToggleSelectionMode}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
         showSettings={() => setShowSettingsModal(true)}
@@ -662,9 +664,14 @@ function HomeContent() {
                     </button>
                     {/* Simplified Bulk Actions for Space */}
                     {viewMode !== 'trash' && (
-                      <button onClick={() => handleBulkAction('favorite')} className="btn btn-circle btn-sm btn-ghost text-slate-400 hover:text-yellow-400">
-                        <Heart className="w-4 h-4" />
-                      </button>
+                      <>
+                        <button onClick={() => handleBulkAction('favorite')} className="btn btn-circle btn-sm btn-ghost text-slate-400 hover:text-yellow-400">
+                          <Heart className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleBulkAction(viewMode === 'archived' ? 'unarchive' : 'archive')} className="btn btn-circle btn-sm btn-ghost text-slate-400 hover:text-cyan-400">
+                          <Archive className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
                     <button onClick={() => handleBulkAction(viewMode === 'trash' ? 'delete' : 'trash')} className="btn btn-circle btn-sm btn-ghost text-slate-400 hover:text-red-400">
                       <Trash2 className="w-4 h-4" />

@@ -14,6 +14,8 @@ interface NavigationSidebarProps {
   setViewMode: (mode: 'active' | 'archived' | 'trash' | 'favorites') => void;
   isFocusMode: boolean;
   setIsFocusMode: (val: boolean) => void;
+  isSelectionMode: boolean;
+  onToggleSelectionMode: () => void;
   sortOrder: 'newest' | 'oldest';
   setSortOrder: (val: 'newest' | 'oldest') => void;
   showSettings: () => void;
@@ -27,6 +29,8 @@ export default function NavigationSidebar({
   setViewMode,
   isFocusMode,
   setIsFocusMode,
+  isSelectionMode,
+  onToggleSelectionMode,
   sortOrder,
   setSortOrder,
   showSettings,
@@ -105,6 +109,17 @@ export default function NavigationSidebar({
               <div className={`w-2 h-2 rounded-full ${isFocusMode ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
             </div>
             <span className="font-medium">Focus Mode</span>
+          </button>
+
+          <button
+            onClick={onToggleSelectionMode}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${isSelectionMode
+              ? 'bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/50'
+              : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+              }`}
+          >
+            <CheckSquare className={`w-5 h-5 ${isSelectionMode ? 'fill-cyan-400/20' : ''}`} />
+            <span className="font-medium">Select Notes</span>
           </button>
         </div>
       </nav>
