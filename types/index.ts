@@ -26,6 +26,9 @@ export interface VoiceNote {
     actionItems?: string[];
     contentIdeas?: string[];
     researchPointers?: string[];
+    questionsToAnswer?: string[];
+    potentialRoadblocks?: string[];
+    socialHooks?: string[];
   };
   shareToken?: string;
   isShared?: boolean;

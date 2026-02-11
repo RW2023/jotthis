@@ -21,6 +21,8 @@ export async function POST(
     }
 
     const { id } = await params;
+    const body = await req.json().catch(() => ({}));
+    const type = body.type || 'all';
     
     // 2. Fetch Note from Firestore
     const noteRef = adminDb
@@ -48,11 +50,39 @@ export async function POST(
     }
 
     // 3. Call OpenAI
+    let systemPrompt = "You are an AI assistant that summarizes voice notes and extracts actionable tasks.";
+    let userPrompt = "";
+
+    if (type === 'summary') {
+      systemPrompt = "You are a concise summarizer.";
+      userPrompt = AI_PROMPTS.summary(transcript);
+    } else if (type === 'actionItems') {
+      systemPrompt = "You are a task extraction expert.";
+      userPrompt = AI_PROMPTS.actionItems(transcript);
+    } else if (type === 'research') {
+      systemPrompt = "You are a research analyst.";
+      userPrompt = AI_PROMPTS.research(transcript);
+    } else if (type === 'contentIdeas') {
+      systemPrompt = "You are a creative content strategist.";
+      userPrompt = AI_PROMPTS.contentIdeas(transcript);
+    } else if (type === 'questions') {
+      systemPrompt = "You are a critical thinker identifying gaps.";
+      userPrompt = AI_PROMPTS.questions(transcript);
+    } else if (type === 'roadblocks') {
+      systemPrompt = "You are a risk management expert.";
+      userPrompt = AI_PROMPTS.roadblocks(transcript);
+    } else if (type === 'socialMedia') {
+      systemPrompt = "You are a social media growth hacker.";
+      userPrompt = AI_PROMPTS.socialMedia(transcript);
+    } else {
+      userPrompt = AI_PROMPTS.analyzeNote(transcript);
+    }
+
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Use gpt-4o-mini for speed/cost efficiently
+      model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are an AI assistant that summarizes voice notes and extracts actionable tasks." },
-        { role: "user", content: AI_PROMPTS.analyzeNote(transcript) }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
       ],
       response_format: { type: "json_object" },
     });
@@ -66,13 +96,32 @@ export async function POST(
     const parsedResponse = JSON.parse(aiResponse);
 
     // 4. Update Note in Firestore
-    await noteRef.update({
-      summary: parsedResponse.summary,
-      actionItems: parsedResponse.actionItems || [],
-      tags: parsedResponse.tags || [],
-      isAnalyzed: true,
+    const updateData: any = {
       updatedAt: new Date(),
-    });
+    };
+
+    if (type === 'summary') {
+      updateData.summary = parsedResponse.summary;
+    } else if (type === 'actionItems') {
+      updateData.actionItems = parsedResponse.actionItems || [];
+    } else if (type === 'research') {
+      updateData['insights.researchPointers'] = parsedResponse.research || [];
+    } else if (type === 'contentIdeas') {
+      updateData['insights.contentIdeas'] = parsedResponse.contentIdeas || [];
+    } else if (type === 'questions') {
+      updateData['insights.questionsToAnswer'] = parsedResponse.questions || [];
+    } else if (type === 'roadblocks') {
+      updateData['insights.potentialRoadblocks'] = parsedResponse.roadblocks || [];
+    } else if (type === 'socialMedia') {
+      updateData['insights.socialHooks'] = parsedResponse.socialMedia || [];
+    } else {
+      updateData.summary = parsedResponse.summary;
+      updateData.actionItems = parsedResponse.actionItems || [];
+      updateData.tags = parsedResponse.tags || [];
+      updateData.isAnalyzed = true;
+    }
+
+    await noteRef.update(updateData);
 
     return NextResponse.json({ 
       success: true, 
