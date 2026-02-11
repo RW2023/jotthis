@@ -349,7 +349,7 @@ export default function TagCloudPage() {
                   {filteredNotes.map(note => (
                     <Link
                       key={note.id} 
-                      href={`/?search=${selectedTag}`}
+                      href={`/dashboard?noteId=${note.id}`}
                       className="glass p-4 rounded-xl hover:bg-white/5 transition-colors group block border border-slate-700/50"
                     >
                       <div className="flex justify-between items-start mb-2">
