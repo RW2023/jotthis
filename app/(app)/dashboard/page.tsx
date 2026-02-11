@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Loader2, LogOut, Settings, Clock, Tag, Heart, CheckSquare, Square, Trash2, Archive, X, Lock, Unlock, ArrowDownUp, Layout } from 'lucide-react';
+import { Mic, Loader2, LogOut, Settings, Clock, Tag, Heart, Square, Trash2, Archive, X, Lock, Unlock, ArrowDownUp } from 'lucide-react';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import { useAuth } from '@/components/AuthProvider';
 import { useNotes } from '@/components/NotesProvider';
@@ -44,7 +44,7 @@ export default function Home() {
 }
 
 function HomeContent() {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
   const { status, duration, volume, startRecording, stopRecording, error, analyserNode } = useVoiceRecorder();

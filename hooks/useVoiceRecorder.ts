@@ -37,7 +37,11 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       // Setup Audio Context for visualization
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+      if (!AudioContextClass) {
+        throw new Error('AudioContext not supported in this browser');
+      }
+      const audioContext = new AudioContextClass();
       const analyser = audioContext.createAnalyser();
       const source = audioContext.createMediaStreamSource(stream);
       

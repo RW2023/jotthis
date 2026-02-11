@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Sparkles, CheckCircle2, ArrowRight, Zap, Shield, Smartphone, Globe, Layers, Play } from 'lucide-react';
+import { Mic, Sparkles, CheckCircle2, ArrowRight, Zap, Shield, Layers, Play } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import AuthModal from '@/components/AuthModal';
 
