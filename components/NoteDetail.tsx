@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Sparkles, Loader2, ListChecks, Lightbulb, Search, Tag, Share2, Copy, Check, Archive, ArchiveRestore, RefreshCcw, Trash2, Lock, Unlock } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, ListChecks, Lightbulb, Search, Tag, Share2, Copy, Check, Archive, ArchiveRestore, RefreshCcw, Trash2, Lock, Unlock, CalendarPlus, Mail } from 'lucide-react';
 import { VoiceNote } from '@/types';
 import TTSPlayer from './TTSPlayer';
 
@@ -19,7 +19,7 @@ interface NoteDetailProps {
   isTrash: boolean;
 }
 
-type InsightType = 'actionItems' | 'contentIdeas' | 'research';
+type InsightType = 'actionItems' | 'contentIdeas' | 'research' | 'all';
 
 export default function NoteDetail({
   note,
@@ -111,102 +111,60 @@ export default function NoteDetail({
     setIsEditing(false);
   };
 
-  const extractInsights = async (type: InsightType) => {
-    setLoadingInsight(type);
-
+  /* AI Analysis Handler */
+  const handleAnalyze = async () => {
+    setLoadingInsight('all');
     try {
-      const apiKey = localStorage.getItem('openai_api_key');
-
-      const response = await fetch('/api/analyze', {
+      const response = await fetch(`/api/notes/${note.id}/analyze`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-openai-key': apiKey || '',
-        },
-        body: JSON.stringify({
-          transcript: note.transcript,
-          type,
-        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Analysis failed');
+      }
 
       const data = await response.json();
 
-
-
       if (data.success) {
-        // Map 'research' to 'researchPointers' to match VoiceNote type
-        const stateKey = type === 'research' ? 'researchPointers' : type;
-        const updatedInsights = { ...insights, [stateKey]: data.insights };
+        toast.success('Note analyzed successfully!', { icon: '✨' });
 
+        // Update local state immediately for responsiveness
+        const updatedNote = {
+          ...note,
+          summary: data.data.summary,
+          actionItems: data.data.actionItems,
+          tags: [...(note.tags || []), ...(data.data.tags || [])], // Merge tags
+          isAnalyzed: true
+        };
 
-        setInsights(updatedInsights);
-
-        if (data.insights.length === 0) {
-          toast.success('No unique actionable items found in this note.', {
-            icon: 'ℹ️',
-            style: {
-              borderRadius: '10px',
-              background: '#1e293b',
-              color: '#fff',
-            },
-          });
-        } else {
-          toast.success('Analysis complete!', {
-            icon: '✨',
-            style: {
-              borderRadius: '10px',
-              background: '#1e293b',
-              color: '#fff',
-            },
-          });
-        }
-
-        const updatedNote = { ...note, insights: updatedInsights };
         onUpdate(updatedNote);
-      } else {
-        console.error('API returned success: false', data);
       }
-    } catch (err) {
-      console.error('Failed to extract insights:', err);
-      toast.error('Failed to analyze note. Check your API Key.', {
-        style: {
-          borderRadius: '10px',
-          background: '#1e293b',
-          color: '#fff',
-        },
-      });
+    } catch (error: any) {
+      console.error('Analysis error:', error);
+      toast.error(error.message || 'Failed to analyze note. Please try again.');
     } finally {
       setLoadingInsight(null);
     }
   };
 
-  const insightButtons = [
-    {
-      type: 'actionItems' as InsightType,
-      label: 'Action Items',
-      icon: ListChecks,
-      color: 'text-green-400',
-    },
-    {
-      type: 'contentIdeas' as InsightType,
-      label: 'Content Ideas',
-      icon: Lightbulb,
-      color: 'text-yellow-400',
-    },
-    {
-      type: 'research' as InsightType,
-      label: 'Research',
-      icon: Search,
-      color: 'text-blue-400',
-    },
-  ];
+  /* Smart Actions */
+  const addToCalendar = (text: string) => {
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(text)}&details=Generated from JotThis`;
+    window.open(url, '_blank');
+  };
+
+  const sendEmail = (text: string) => {
+    const url = `mailto:?subject=${encodeURIComponent("Action Item: " + text)}&body=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="max-w-4xl mx-auto"
+      className="max-w-4xl mx-auto pb-20"
     >
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
@@ -228,53 +186,39 @@ export default function NoteDetail({
           )}
           <p className="text-sm text-slate-500 mt-1">
             {new Date(note.createdAt).toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+              hour: 'numeric', minute: '2-digit'
             })}
           </p>
         </div>
 
         {!isTrash && (
-          <TTSPlayer
-            text={note.transcript}
-            userId={note.userId}
-          />
+          <TTSPlayer text={note.transcript} userId={note.userId} />
         )}
       </div>
 
-      <div className="flex gap-2">
-        {/* Actions */}
+      <div className="flex gap-2 mb-8">
+        {/* Actions Toolbar */}
         {!isTrash && (
           <>
             <button
               onClick={() => onLock(note.id, !note.isLocked)}
-              className={`btn btn-ghost btn-circle ${note.isLocked ? 'text-amber-500 hover:text-amber-400' : 'text-slate-400 hover:text-amber-500'}`}
+              className={`btn btn-ghost btn-circle ${note.isLocked ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'}`}
               title={note.isLocked ? "Unlock Note" : "Lock Note"}
-              aria-label={note.isLocked ? "Unlock Note" : "Lock Note"}
             >
               {note.isLocked ? <Lock className="w-5 h-5" /> : <Unlock className="w-5 h-5" />}
             </button>
 
             <button
-              onClick={() => {
-                if (!note.isLocked) onArchive(note.id, !note.isArchived);
-              }}
+              onClick={() => !note.isLocked && onArchive(note.id, !note.isArchived)}
               disabled={!!note.isLocked}
-              className={`btn btn-ghost btn-circle ${note.isLocked ? 'opacity-50 cursor-not-allowed text-slate-600' : 'text-slate-400 hover:text-cyan-400'}`}
-              title={note.isLocked ? "Unlock to Archive" : (note.isArchived ? "Unarchive" : "Archive")}
-              aria-label={note.isLocked ? "Unlock to Archive" : (note.isArchived ? "Unarchive" : "Archive")}
+              className={`btn btn-ghost btn-circle ${note.isLocked ? 'opacity-50' : 'text-slate-400 hover:text-cyan-400'}`}
+              title={note.isArchived ? "Unarchive" : "Archive"}
             >
               {note.isArchived ? <ArchiveRestore className="w-5 h-5" /> : <Archive className="w-5 h-5" />}
             </button>
 
-            <button
-              onClick={handleShare}
-              className="btn btn-ghost text-cyan-400 hover:bg-cyan-400/10 gap-2"
-            >
+            <button onClick={handleShare} className="btn btn-ghost text-cyan-400 hover:bg-cyan-400/10 gap-2">
               <Share2 className="w-5 h-5" />
               <span className="hidden sm:inline">Share</span>
             </button>
@@ -283,7 +227,6 @@ export default function NoteDetail({
               <button
                 onClick={() => setIsEditing(true)}
                 className="btn btn-ghost text-slate-400 hover:text-cyan-400 gap-2"
-                title="Edit Note"
               >
                 <Sparkles className="w-5 h-5" />
                 <span className="hidden sm:inline">Edit</span>
@@ -293,88 +236,126 @@ export default function NoteDetail({
         )}
 
         {isTrash && (
-          <button
-            onClick={() => onRestore(note.id)}
-            className="btn btn-ghost text-green-400 hover:bg-green-400/10 gap-2"
-          >
+          <button onClick={() => onRestore(note.id)} className="btn btn-ghost text-green-400 hover:bg-green-400/10 gap-2">
             <RefreshCcw className="w-5 h-5" />
             <span className="hidden sm:inline">Restore</span>
           </button>
         )}
 
         <button
-          onClick={() => {
-            if (!note.isLocked) onDelete(note.id);
-          }}
+          onClick={() => !note.isLocked && onDelete(note.id)}
           disabled={!!note.isLocked}
-          className={`btn btn-ghost btn-circle ${note.isLocked ? 'opacity-50 cursor-not-allowed text-slate-600' : (isTrash ? 'text-red-500 hover:bg-red-500/10' : 'text-slate-400 hover:text-red-400')}`}
-          title={note.isLocked ? "Unlock to Delete" : (isTrash ? "Delete Permanently" : "Move to Trash")}
-          aria-label={note.isLocked ? "Unlock to Delete" : (isTrash ? "Delete Permanently" : "Move to Trash")}
+          className={`btn btn-ghost btn-circle ${note.isLocked ? 'opacity-50' : (isTrash ? 'text-red-500 hover:bg-red-500/10' : 'text-slate-400 hover:text-red-400')}`}
+          title={isTrash ? "Delete Permanently" : "Move to Trash"}
         >
           <Trash2 className="w-5 h-5" />
         </button>
       </div>
 
+      {/* AI Summary Section */}
+      {note.summary && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl p-6"
+        >
+          <div className="flex items-center gap-2 mb-3 text-indigo-300 font-semibold">
+            <Sparkles className="w-5 h-5" />
+            <h3>AI Summary</h3>
+          </div>
+          <p className="text-slate-200 leading-relaxed text-lg font-medium">{note.summary}</p>
+        </motion.div>
+      )}
 
-      {/* Share Modal */}
-      <AnimatePresence>
-        {showShareModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#1e293b] border border-slate-700/50 rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
-            >
-              <button
-                onClick={() => setShowShareModal(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white"
-                aria-label="Close modal"
-              >
-                ✕
-              </button>
-
-              <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                <Share2 className="w-5 h-5 text-cyan-400" />
-                Share Note
-              </h3>
-              <p className="text-slate-400 mb-6 text-sm">
-                Anyone with this link can view the transcript of this note.
-              </p>
-
-              {generatingLink ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
-                </div>
-              ) : (
-                <div className="bg-black/30 p-3 rounded-lg flex items-center gap-3 border border-slate-700/50">
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-slate-300 text-sm truncate font-mono">
-                      {typeof window !== 'undefined' ? `${window.location.origin}/share/${note.id}?token=${note.shareToken}` : 'Loading...'}
-                    </p>
-                  </div>
-                  <button
-                      onClick={copyShareLink}
-                    className="btn btn-square btn-sm btn-ghost hover:bg-white/10 text-cyan-400"
-                      aria-label="Copy link"
-                  >
-                    {copySuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
-              )}
-
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setShowShareModal(false)}
-                  className="btn btn-ghost text-slate-300 hover:text-white"
-                >
-                  Close
-                </button>
+      {/* Action Items & Tags Grid */}
+      {(note.actionItems?.length || 0) > 0 || (note.tags?.length || 0) > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Action Items */}
+          {note.actionItems && note.actionItems.length > 0 && (
+            <div className="glass rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-4 text-emerald-400 font-semibold">
+                <ListChecks className="w-5 h-5" />
+                <h3>Action Items</h3>
               </div>
-            </motion.div>
+              <ul className="space-y-3">
+                {note.actionItems.map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-3 group relative pr-8">
+                    <div className="mt-1 w-5 h-5 flex-shrink-0 rounded border border-emerald-500/30 flex items-center justify-center group-hover:border-emerald-500/60 transition-colors cursor-default">
+                      {/* Checkbox placeholder */}
+                    </div>
+                    <span className="text-slate-300 group-hover:text-slate-200 transition-colors flex-1">{item}</span>
+
+                    {/* Smart Actions (Show on Hover) */}
+                    <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-[#1e293b] shadow-lg rounded-lg p-1 border border-slate-700/50 -mt-1 transform translate-x-2">
+                      <button
+                        onClick={() => addToCalendar(item)}
+                        className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-colors"
+                        title="Add to Calendar"
+                      >
+                        <CalendarPlus className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => sendEmail(item)}
+                        className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-green-500/10 rounded-md transition-colors"
+                        title="Send via Email"
+                      >
+                        <Mail className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Tags Cloud */}
+          {note.tags && note.tags.length > 0 && (
+            <div className="glass rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-4 text-cyan-400 font-semibold">
+                <Tag className="w-5 h-5" />
+                <h3>Smart Tags</h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {note.tags.map(tag => (
+                  <span key={tag} className="px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-sm">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {/* Transcript Editor */}
+      <div className="glass p-6 rounded-xl mb-6 relative group">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-slate-200">Transcript</h2>
+          <button onClick={copyTranscript} className="btn btn-ghost btn-sm text-slate-400 hover:text-cyan-400 gap-2">
+            {copyTranscriptSuccess ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+            <span className="text-xs">Copy</span>
+          </button>
+        </div>
+
+        {isEditing ? (
+          <textarea
+            value={editedTranscript}
+            onChange={(e) => setEditedTranscript(e.target.value)}
+            className="w-full h-96 bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-slate-300 leading-relaxed focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none font-mono text-base"
+          />
+        ) : (
+          <div className="prose prose-invert max-w-none text-slate-300 leading-8">
+            {note.transcript}
           </div>
         )}
-      </AnimatePresence>
+      </div>
+
+      {isEditing && (
+        <div className="flex justify-end gap-3 mb-6">
+          <button onClick={handleCancel} className="btn btn-ghost text-slate-400">Cancel</button>
+          <button onClick={handleSave} className="btn bg-cyan-500 hover:bg-cyan-400 text-white shadow-lg shadow-cyan-500/20 border-none">Save Changes</button>
+        </div>
+      )}
 
       {/* Category Selection */}
       <div className="mb-6">
@@ -410,116 +391,67 @@ export default function NoteDetail({
         </div>
       </div>
 
-      {/* Tags */}
-      {note.tags && note.tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-6">
-          {note.tags.map(tag => (
-            <span key={tag} className="badge badge-lg glass text-cyan-300 border-cyan-400/30">
-              <Tag className="w-4 h-4 mr-1" />
-              {tag}
-            </span>
-          ))}
+      {/* Generate AI Analysis Button (if not yet analyzed) */}
+      {!note.isAnalyzed && !loadingInsight && !isTrash && (
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleAnalyze}
+          className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
+        >
+          <Sparkles className="w-5 h-5" />
+          Generate AI Insights
+        </motion.button>
+      )}
+
+      {loadingInsight && (
+        <div className="w-full py-8 text-center text-slate-400 flex flex-col items-center gap-3 animate-pulse">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+          <p>Analyzing note content...</p>
         </div>
       )}
 
-      {/* Transcript */}
-      <div className="glass p-6 rounded-xl mb-6">
-        <h2 className="text-xl font-semibold text-slate-200 mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-cyan-400" />
-            Transcript
-          </div>
-          <button
-            onClick={copyTranscript}
-            className="btn btn-ghost btn-sm text-slate-400 hover:text-cyan-400 gap-2"
-            title="Copy transcript"
-          >
-            {copyTranscriptSuccess ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-            <span className="text-xs">Copy</span>
-          </button>
-        </h2>
-        {isEditing ? (
-          <textarea
-            value={editedTranscript}
-            onChange={(e) => setEditedTranscript(e.target.value)}
-            className="w-full h-64 bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-slate-300 leading-relaxed focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all resize-none"
-            placeholder="Note content..."
-          />
-        ) : (
-            <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{note.transcript}</p>
-        )}
-      </div>
-
-      {
-        isEditing && (
-          <div className="flex justify-end gap-3 mb-6">
-            <button
-              onClick={handleCancel}
-              className="btn btn-ghost text-slate-400"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="btn bg-cyan-500 hover:bg-cyan-400 text-white border-none shadow-lg shadow-cyan-500/20"
-            >
-              Save Changes
-            </button>
-      </div>
-        )
-      }
-
-      {/* Insight Extraction Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {insightButtons.map(({ type, label, icon: Icon, color }) => (
-          <motion.button
-            key={type}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => extractInsights(type)}
-            disabled={loadingInsight !== null}
-            className="glass glass-hover p-4 rounded-xl text-left flex items-center gap-3"
-          >
-            {loadingInsight === type ? (
-              <Loader2 className={`w-5 h-5 ${color} animate-spin`} />
-            ) : (
-              <Icon className={`w-5 h-5 ${color}`} />
-            )}
-            <span className="text-slate-200 font-medium">{label}</span>
-          </motion.button>
-        ))}
-      </div>
-
-      {/* Insights Display */}
+      {/* Share Modal */}
       <AnimatePresence>
-        {Object.entries(insights || {}).map(([type, items]) =>
-          items && items.length > 0 ? (
+        {showShareModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <motion.div
-              key={type}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="glass p-6 rounded-xl mb-4"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#1e293b] border border-slate-700/50 rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
             >
-              <h3 className="text-lg font-semibold text-slate-200 mb-3 capitalize">
-                {type.replace(/([A-Z])/g, ' $1').trim()}
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+              <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-cyan-400" />
+                Share Note
               </h3>
-              <ul className="space-y-2">
-                {items.map((item, idx) => (
-                  <motion.li
-                    key={idx}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="text-slate-300 flex items-start gap-2"
-                  >
-                    <span className="text-cyan-400 mt-1">•</span>
-                    <span>{item}</span>
-                  </motion.li>
-                ))}
-              </ul>
+              <p className="text-slate-400 mb-6 text-sm">
+                Anyone with this link can view the transcript of this note.
+              </p>
+              {generatingLink ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+                </div>
+              ) : (
+                <div className="bg-black/30 p-3 rounded-lg flex items-center gap-3 border border-slate-700/50">
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-slate-300 text-sm truncate font-mono">
+                      {typeof window !== 'undefined' ? `${window.location.origin}/share/${note.id}?token=${note.shareToken}` : 'Loading...'}
+                    </p>
+                  </div>
+                  <button onClick={copyShareLink} className="btn btn-square btn-sm btn-ghost hover:bg-white/10 text-cyan-400">
+                    {copySuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+              )}
             </motion.div>
-          ) : null
+          </div>
         )}
       </AnimatePresence>
     </motion.div>

@@ -16,6 +16,9 @@ export interface VoiceNote {
     status: 'pending' | 'done';
   };
   tags: string[];
+  summary?: string;
+  actionItems?: string[];
+  isAnalyzed?: boolean;
   audioUrl?: string;
   createdAt: Date;
   updatedAt: Date;

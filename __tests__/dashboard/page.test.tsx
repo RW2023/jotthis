@@ -1,6 +1,6 @@
 
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
+import { vi, describe, it, expect } from 'vitest';
 import Home from '@/app/(app)/dashboard/page';
 import { AuthProvider } from '@/components/AuthProvider';
 import { NotesProvider } from '@/components/NotesProvider';
@@ -50,6 +50,7 @@ const mockNotes = [
     updatedAt: new Date(),
     isDeleted: false,
     isArchived: false,
+    tags: [],
   }
 ];
 

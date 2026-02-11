@@ -18,14 +18,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Create the session cookie
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+
     // Set the cookie
     const cookieStore = await cookies();
-    cookieStore.set('session', 'true', {
+    cookieStore.set('session', sessionCookie, {
       path: '/',
       httpOnly: true, // Crucial for security
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
+      maxAge: expiresIn / 1000,
     });
 
     return NextResponse.json({ isLogged: true });
