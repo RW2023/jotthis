@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   User,
   signInWithEmailAndPassword,
@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   // Handle redirect result (for Mobile/PWA flows)
   useEffect(() => {
@@ -56,6 +57,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({ idToken }),
             headers: { 'Content-Type': 'application/json' },
           });
+
+          if (pathname === '/') {
+            router.push('/dashboard');
+          }
         } else {
           await fetch('/api/auth/session', {
             method: 'DELETE',

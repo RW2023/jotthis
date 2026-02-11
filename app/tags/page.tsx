@@ -259,7 +259,7 @@ export default function TagCloudPage() {
         <AnimatePresence>
           {isSmartView && filteredClusters.map((cluster, idx) => (
             <motion.div
-              key={cluster.theme}
+              key={`${cluster.theme}-${idx}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
