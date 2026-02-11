@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Tag, Trash2, Clock, Archive, ArchiveRestore, RefreshCcw, Heart, CheckSquare, Square, Lock, Unlock, AlertCircle, ShoppingCart, Calendar, Lightbulb } from 'lucide-react';
 import { VoiceNote } from '@/types';
+import TTSPlayer from './TTSPlayer';
 
 interface NotesListProps {
   notes: VoiceNote[];
@@ -246,6 +247,15 @@ export default function NotesList({
 
               {/* Transcript Preview */}
                  <p className={`text-sm text-slate-400 line-clamp-3 mb-3 ${isSelectionMode ? 'pl-8' : ''}`}>{note.transcript}</p>
+
+                {/* TTS Player (Compact) - Only if transcript exists */}
+                {note.transcript && (
+                  <div className={`mb-3 ${isSelectionMode ? 'pl-8' : ''} flex justify-end`}>
+                    <TTSPlayer text={note.transcript} userId={note.userId} compact={true} />
+                  </div>
+                )}
+
+
 
                 {/* Tags and Metadata */}
                 <div className={`flex flex-wrap items-center gap-3 mb-3 ${isSelectionMode ? 'pl-8' : ''}`}>

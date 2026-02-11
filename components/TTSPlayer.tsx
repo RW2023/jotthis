@@ -8,9 +8,10 @@ interface TTSPlayerProps {
   text: string;
   voice?: string;
   userId: string;
+  compact?: boolean;
 }
 
-export default function TTSPlayer({ text, voice = 'alloy', userId }: TTSPlayerProps) {
+export default function TTSPlayer({ text, voice = 'alloy', userId, compact = false }: TTSPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -35,7 +36,9 @@ export default function TTSPlayer({ text, voice = 'alloy', userId }: TTSPlayerPr
     };
   }, []);
 
-  const handlePlay = async () => {
+  const handlePlay = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+
     if (isPlaying) {
       audioRef.current?.pause();
       setIsPlaying(false);
@@ -58,7 +61,6 @@ export default function TTSPlayer({ text, voice = 'alloy', userId }: TTSPlayerPr
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-openai-key': localStorage.getItem('openai_api_key') || '',
         },
         body: JSON.stringify({ text, voice: activeVoice, userId }),
       });
@@ -89,6 +91,25 @@ export default function TTSPlayer({ text, voice = 'alloy', userId }: TTSPlayerPr
       setIsLoading(false);
     }
   };
+
+  if (compact) {
+    return (
+      <button
+        onClick={handlePlay}
+        disabled={isLoading}
+        className="btn btn-circle btn-sm btn-primary text-white border-none shadow-lg shadow-cyan-500/20 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 w-8 h-8 min-h-0"
+        title="Listen to Note"
+      >
+        {isLoading ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        ) : isPlaying ? (
+          <Pause className="w-3.5 h-3.5 fill-current" />
+        ) : (
+          <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+        )}
+      </button>
+    );
+  }
 
   return (
     <div className="flex items-center gap-3 bg-slate-800/50 p-2 rounded-full pr-4 border border-slate-700/50 backdrop-blur-sm">
