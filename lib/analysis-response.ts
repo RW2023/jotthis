@@ -8,6 +8,16 @@ export type AnalysisType =
   | 'socialMedia'
   | 'all';
 
+export interface NormalizedAnalysisResponse {
+  summary?: string;
+  actionItems?: string[];
+  research?: string[];
+  contentIdeas?: string[];
+  questions?: string[];
+  roadblocks?: string[];
+  socialMedia?: string[];
+  tags?: string[];
+}
 
 const ANALYSIS_TYPES: AnalysisType[] = [
   'summary',
@@ -54,7 +64,10 @@ const pickArrayByAliases = (payload: Record<string, unknown>, aliases: string[])
   return [];
 };
 
-export const normalizeAnalysisResponse = (type: AnalysisType, payload: Record<string, unknown>) => {
+export const normalizeAnalysisResponse = (
+  type: AnalysisType,
+  payload: Record<string, unknown>
+): NormalizedAnalysisResponse => {
   if (type === 'summary') {
     return {
       summary: typeof payload.summary === 'string' ? payload.summary.trim() : '',
@@ -72,4 +85,3 @@ export const normalizeAnalysisResponse = (type: AnalysisType, payload: Record<st
   const values = pickArrayByAliases(payload, ARRAY_FIELD_ALIASES[type]);
   return { [type]: values };
 };
-
