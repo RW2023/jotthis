@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { openai, AI_PROMPTS } from '@/lib/ai';
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { isAnalysisType, normalizeAnalysisResponse, type AnalysisType } from '@/lib/analysis-response';
 
 export async function POST(
   req: Request,
@@ -22,7 +23,8 @@ export async function POST(
 
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
-    const type = body.type || 'all';
+    const requestedType = body.type;
+    const type: AnalysisType = isAnalysisType(requestedType) ? requestedType : 'all';
     
     // 2. Fetch Note from Firestore
     const noteRef = adminDb
@@ -93,7 +95,8 @@ export async function POST(
       throw new Error('Failed to generate AI response');
     }
 
-    const parsedResponse = JSON.parse(aiResponse);
+    const parsedResponse = JSON.parse(aiResponse) as Record<string, unknown>;
+    const normalizedResponse = normalizeAnalysisResponse(type, parsedResponse);
 
     // 4. Update Note in Firestore
     const updateData: any = {
@@ -101,23 +104,23 @@ export async function POST(
     };
 
     if (type === 'summary') {
-      updateData.summary = parsedResponse.summary;
+      updateData.summary = normalizedResponse.summary;
     } else if (type === 'actionItems') {
-      updateData.actionItems = parsedResponse.actionItems || [];
+      updateData.actionItems = normalizedResponse.actionItems || [];
     } else if (type === 'research') {
-      updateData['insights.researchPointers'] = parsedResponse.research || [];
+      updateData['insights.researchPointers'] = normalizedResponse.research || [];
     } else if (type === 'contentIdeas') {
-      updateData['insights.contentIdeas'] = parsedResponse.contentIdeas || [];
+      updateData['insights.contentIdeas'] = normalizedResponse.contentIdeas || [];
     } else if (type === 'questions') {
-      updateData['insights.questionsToAnswer'] = parsedResponse.questions || [];
+      updateData['insights.questionsToAnswer'] = normalizedResponse.questions || [];
     } else if (type === 'roadblocks') {
-      updateData['insights.potentialRoadblocks'] = parsedResponse.roadblocks || [];
+      updateData['insights.potentialRoadblocks'] = normalizedResponse.roadblocks || [];
     } else if (type === 'socialMedia') {
-      updateData['insights.socialHooks'] = parsedResponse.socialMedia || [];
+      updateData['insights.socialHooks'] = normalizedResponse.socialMedia || [];
     } else {
-      updateData.summary = parsedResponse.summary;
-      updateData.actionItems = parsedResponse.actionItems || [];
-      updateData.tags = parsedResponse.tags || [];
+      updateData.summary = normalizedResponse.summary;
+      updateData.actionItems = normalizedResponse.actionItems || [];
+      updateData.tags = normalizedResponse.tags || [];
       updateData.isAnalyzed = true;
     }
 
@@ -125,7 +128,7 @@ export async function POST(
 
     return NextResponse.json({ 
       success: true, 
-      data: parsedResponse 
+      data: normalizedResponse 
     });
 
   } catch (error: any) {
