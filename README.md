@@ -2,6 +2,8 @@
 
 ![Screenshot](screenshot.png)
 
+![Dashboard](screenshot-dashboard.png)
+
 > Transform your voice notes into structured insights with AI-powered transcription and analysis.
 
 ## 🎯 Project Overview
