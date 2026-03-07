@@ -1,5 +1,7 @@
 # JotThis - AI Voice Notes
 
+![Screenshot](screenshot.png)
+
 > Transform your voice notes into structured insights with AI-powered transcription and analysis.
 
 ## 🎯 Project Overview
