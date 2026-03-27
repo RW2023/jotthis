@@ -2,10 +2,9 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { 
-  Settings, LogOut, Tag, Heart, Trash2, Archive, 
-  ArrowDownUp, Mic, List, CheckSquare, Square, X,
-  Layout, LayoutGrid
+import {
+  Settings, LogOut, Tag, Heart, Trash2, Archive,
+  CheckSquare, LayoutGrid
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 
@@ -31,8 +30,8 @@ export default function NavigationSidebar({
   setIsFocusMode,
   isSelectionMode,
   onToggleSelectionMode,
-  sortOrder,
-  setSortOrder,
+  sortOrder: _sortOrder,
+  setSortOrder: _setSortOrder,
   showSettings,
   user,
   signOut,

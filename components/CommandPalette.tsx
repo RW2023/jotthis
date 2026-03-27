@@ -11,11 +11,9 @@ import {
     Search,
     Sun,
     Moon,
-    Laptop,
     FileAudio
 } from 'lucide-react';
 import { useNotes } from '@/components/NotesProvider';
-import { VoiceNote } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
 
 export const CommandPalette = () => {
