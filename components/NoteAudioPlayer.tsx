@@ -8,6 +8,20 @@ interface NoteAudioPlayerProps {
   compact?: boolean;
 }
 
+function PlaybackBars() {
+  return (
+    <div className="flex gap-[2px] items-end h-3 mt-0.5">
+      {[...Array(12)].map((_, i) => (
+        <div
+          key={i}
+          className="w-[3px] bg-emerald-400/80 rounded-full animate-pulse"
+          style={{ height: `${30 + Math.sin(i * 0.8) * 25}%`, animationDelay: `${i * 0.08}s`, animationDuration: `${0.6 + (i % 3) * 0.2}s` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function NoteAudioPlayer({ audioUrl, compact = false }: NoteAudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -27,7 +41,7 @@ export default function NoteAudioPlayer({ audioUrl, compact = false }: NoteAudio
   }, [audioUrl]);
 
   const handlePlay = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent opening the note
+    e.stopPropagation();
     if (!audioRef.current) return;
 
     if (isPlaying) {
@@ -38,7 +52,7 @@ export default function NoteAudioPlayer({ audioUrl, compact = false }: NoteAudio
   };
 
   return (
-    <div 
+    <div
       className={`flex items-center gap-2 bg-slate-800/50 p-1.5 rounded-full border border-slate-700/50 backdrop-blur-sm transition-all hover:bg-slate-700/50 ${compact ? 'pr-1.5' : 'pr-4'}`}
       onClick={(e) => e.stopPropagation()}
     >
@@ -59,21 +73,7 @@ export default function NoteAudioPlayer({ audioUrl, compact = false }: NoteAudio
             <Mic className="w-3 h-3 text-emerald-400" />
             {isPlaying ? 'Playing Original...' : 'Original Audio'}
           </span>
-          {/* Visualizer bar */}
-          {isPlaying && (
-            <div className="flex gap-0.5 items-end h-2 mt-0.5">
-              {[...Array(12)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-0.5 bg-emerald-400/80 rounded-full animate-pulse"
-                  style={{
-                    height: `${Math.random() * 100}%`,
-                    animationDelay: `${i * 0.1}s`
-                  }}
-                />
-              ))}
-            </div>
-          )}
+          {isPlaying && <PlaybackBars />}
         </div>
       )}
     </div>

@@ -1,8 +1,25 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, Loader2, Volume2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+
+function FrequencyBars({ color = 'cyan' }: { color?: 'cyan' | 'emerald' }) {
+  const colorClass = color === 'cyan' ? 'bg-cyan-400/80' : 'bg-emerald-400/80';
+  return (
+    <div className="flex gap-[2px] items-end h-3 mt-0.5">
+      {[...Array(12)].map((_, i) => (
+        <div
+          key={i}
+          className={`w-[3px] ${colorClass} rounded-full animate-pulse`}
+          style={{ height: `${30 + Math.sin(i * 0.8) * 25}%`, animationDelay: `${i * 0.08}s`, animationDuration: `${0.6 + (i % 3) * 0.2}s` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export { FrequencyBars };
 
 interface TTSPlayerProps {
   text: string;
@@ -19,15 +36,11 @@ export default function TTSPlayer({ text, voice = 'alloy', userId, compact = fal
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Load voice preference from localStorage
     const savedVoice = localStorage.getItem('openai_tts_voice');
-    if (savedVoice) {
-      setActiveVoice(savedVoice);
-    }
+    if (savedVoice) setActiveVoice(savedVoice);
   }, []);
 
   useEffect(() => {
-    // Cleanup audio on unmount
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -36,7 +49,7 @@ export default function TTSPlayer({ text, voice = 'alloy', userId, compact = fal
     };
   }, []);
 
-  const handlePlay = async (e?: React.MouseEvent) => {
+  const handlePlay = useCallback(async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
 
     if (isPlaying) {
@@ -45,31 +58,22 @@ export default function TTSPlayer({ text, voice = 'alloy', userId, compact = fal
       return;
     }
 
-    if (audioUrl) {
-      // Resume or restart
-      if (audioRef.current) {
-        audioRef.current.play();
-        setIsPlaying(true);
-      }
+    if (audioUrl && audioRef.current) {
+      audioRef.current.play();
+      setIsPlaying(true);
       return;
     }
 
-    // Fetch Audio
     setIsLoading(true);
     try {
       const response = await fetch('/api/speak', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, voice: activeVoice, userId }),
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate speech');
-      }
+      if (!response.ok) throw new Error(data.error || 'Failed to generate speech');
 
       const url = data.url;
       setAudioUrl(url);
@@ -83,14 +87,13 @@ export default function TTSPlayer({ text, voice = 'alloy', userId, compact = fal
 
       await audio.play();
       setIsPlaying(true);
-
     } catch (error: unknown) {
       console.error('TTS Error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to play audio');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isPlaying, audioUrl, text, activeVoice, userId]);
 
   if (compact) {
     return (
@@ -132,21 +135,7 @@ export default function TTSPlayer({ text, voice = 'alloy', userId, compact = fal
           <Volume2 className="w-3 h-3 text-cyan-400" />
           {isPlaying ? 'Playing...' : 'Listen to Note'}
         </span>
-        {/* Simple visualizer bar when playing (fake) */}
-        {isPlaying && (
-          <div className="flex gap-0.5 items-end h-2 mt-0.5">
-            {[...Array(12)].map((_, i) => (
-              <div
-                key={i}
-                className="w-0.5 bg-cyan-400/80 rounded-full animate-pulse"
-                style={{
-                  height: `${Math.random() * 100}%`,
-                  animationDelay: `${i * 0.1}s`
-                }}
-              />
-            ))}
-          </div>
-        )}
+        {isPlaying && <FrequencyBars color="cyan" />}
       </div>
     </div>
   );

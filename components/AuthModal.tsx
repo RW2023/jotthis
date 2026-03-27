@@ -59,17 +59,18 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          className="relative w-full max-w-md bg-base-100 rounded-2xl shadow-2xl"
+          initial={{ opacity: 0, scale: 0.9, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 10 }}
+          className="relative w-full max-w-md bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/50"
         >
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 btn btn-ghost btn-sm btn-circle"
+            className="absolute top-4 right-4 btn btn-ghost btn-sm btn-circle text-slate-400 hover:text-white"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -91,7 +92,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <button
                 onClick={handleGoogleSignIn}
                 disabled={loading}
-                className="w-full px-6 py-3 rounded-lg bg-white border-2 border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 hover:border-slate-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                className="w-full px-6 py-3 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 font-semibold hover:bg-slate-700 hover:border-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -122,38 +123,40 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-300"></div>
+                  <div className="w-full border-t border-slate-700"></div>
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-base-100 px-2 text-slate-500">OR</span>
+                  <span className="bg-slate-900 px-2 text-slate-500">OR</span>
                 </div>
               </div>
 
               {/* Email/Password Form */}
               <form onSubmit={handleEmailAuth} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-400 mb-2">
                     Email
                   </label>
                   <input
                     type="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all"
+                    className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
+                    placeholder="you@example.com"
                     required
                     autoComplete="email"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-400 mb-2">
                     Password
                   </label>
                   <input
                     type="password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all"
+                    className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none transition-all"
+                    placeholder="Min. 6 characters"
                     required
                     minLength={6}
                     autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
@@ -161,15 +164,15 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 </div>
 
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <span className="text-sm text-red-700">{error}</span>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                    <span className="text-sm text-red-400">{error}</span>
                   </div>
                 )}
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold hover:from-cyan-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold hover:from-cyan-400 hover:to-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/20"
                 >
                   {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin mx-auto" />
@@ -180,14 +183,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   )}
                 </button>
 
-                <div className="text-center text-sm text-slate-600">
+                <div className="text-center text-sm text-slate-500">
                   {mode === 'signin' ? (
                     <>
                       Don&apos;t have an account?{' '}
                       <button
                         type="button"
                         onClick={() => setMode('signup')}
-                        className="text-cyan-600 hover:text-cyan-700 font-semibold underline"
+                        className="text-cyan-400 hover:text-cyan-300 font-semibold"
                       >
                         Sign up
                       </button>
@@ -198,7 +201,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       <button
                         type="button"
                         onClick={() => setMode('signin')}
-                        className="text-cyan-600 hover:text-cyan-700 font-semibold underline"
+                        className="text-cyan-400 hover:text-cyan-300 font-semibold"
                       >
                         Sign in
                       </button>

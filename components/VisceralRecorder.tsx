@@ -2,15 +2,16 @@
 
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Square, X, Mic } from 'lucide-react';
+import { Square, X } from 'lucide-react';
 
 interface VisceralRecorderProps {
   analyserNode: AnalyserNode | null;
   onStop: () => void;
-  duration: number; // in seconds
+  duration: number;
+  liveTranscript?: string;
 }
 
-export default function VisceralRecorder({ analyserNode, onStop, duration }: VisceralRecorderProps) {
+export default function VisceralRecorder({ analyserNode, onStop, duration, liveTranscript }: VisceralRecorderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
 
@@ -21,7 +22,6 @@ export default function VisceralRecorder({ analyserNode, onStop, duration }: Vis
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -34,29 +34,30 @@ export default function VisceralRecorder({ analyserNode, onStop, duration }: Vis
     const render = () => {
       analyserNode.getByteFrequencyData(dataArray);
 
-      // Clear with slight fade for trail effect
       ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const radius = Math.min(centerX, centerY) * 0.4;
-      
-      // Calculate average volume for pulsing
+      const centerY = canvas.height / 2 - 40; // Shift up slightly for transcript space
+      const radius = Math.min(centerX, centerY) * 0.35;
+
       let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) {
-        sum += dataArray[i];
-      }
+      for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
       const average = sum / dataArray.length;
       const pulse = 1 + (average / 128) * 0.5;
 
-      // Draw specialized circular waveform
+      // Outer glow ring
       ctx.beginPath();
-      // Gradient for likely user preference (Cyberpunk / Premium)
+      ctx.arc(centerX, centerY, radius * 1.2 * pulse, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(34, 211, 238, ${0.02 + (average / 255) * 0.04})`;
+      ctx.fill();
+
+      // Circular frequency bars
+      ctx.beginPath();
       const gradient = ctx.createLinearGradient(0, centerY - radius, 0, centerY + radius);
-      gradient.addColorStop(0, '#22d3ee'); // Cyan
-      gradient.addColorStop(0.5, '#818cf8'); // Indigo
-      gradient.addColorStop(1, '#e879f9'); // Fuchsia
+      gradient.addColorStop(0, '#22d3ee');
+      gradient.addColorStop(0.5, '#818cf8');
+      gradient.addColorStop(1, '#e879f9');
       ctx.strokeStyle = gradient;
       ctx.lineWidth = 4;
       ctx.lineCap = 'round';
@@ -67,19 +68,13 @@ export default function VisceralRecorder({ analyserNode, onStop, duration }: Vis
       const step = (Math.PI * 2) / bars;
 
       for (let i = 0; i < bars; i++) {
-        // Mirror the frequency data (bass at bottom/top, treble at sides? or traditional circle)
-        // Let's map frequency to angle
-        const dataIndex = Math.floor((i / bars) * (dataArray.length / 2)); // Use lower half of spectrum (bass/mids)
+        const dataIndex = Math.floor((i / bars) * (dataArray.length / 2));
         const val = dataArray[dataIndex];
         const barHeight = (val / 255) * (radius * 0.8) * pulse;
 
         const angle = i * step;
-
-        // Start point (on circle)
         const x1 = centerX + Math.cos(angle) * radius;
         const y1 = centerY + Math.sin(angle) * radius;
-
-        // End point (outwards)
         const x2 = centerX + Math.cos(angle) * (radius + barHeight);
         const y2 = centerY + Math.sin(angle) * (radius + barHeight);
 
@@ -88,13 +83,17 @@ export default function VisceralRecorder({ analyserNode, onStop, duration }: Vis
       }
       ctx.stroke();
 
+      // Reset shadow
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = 'transparent';
+
       // Inner glow circle
       ctx.beginPath();
       ctx.arc(centerX, centerY, radius * 0.95, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 1;
       ctx.stroke();
 
       animationRef.current = requestAnimationFrame(render);
@@ -124,23 +123,41 @@ export default function VisceralRecorder({ analyserNode, onStop, duration }: Vis
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full pointer-events-none"
+        role="img"
+        aria-label="Audio frequency visualizer"
       />
 
-      <div className="relative z-10 flex flex-col items-center gap-8">
+      <div className="relative z-10 flex flex-col items-center gap-6 max-w-lg mx-auto px-6">
         {/* Timer */}
         <div className="text-6xl font-mono font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 drop-shadow-2xl">
           {formatDuration(duration)}
         </div>
 
-        {/* Status Text */}
+        {/* Status */}
         <div className="flex items-center gap-2 text-slate-400/80 uppercase tracking-[0.2em] text-sm animate-pulse">
-           <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]" />
-           Recording
+          <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]" />
+          Recording
         </div>
 
-        {/* Controls */}
-        <div className="mt-8 flex items-center gap-6">
-           <motion.button
+        {/* Live Transcript Preview */}
+        <AnimatePresence>
+          {liveTranscript && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -10 }}
+              className="max-h-24 overflow-hidden"
+            >
+              <p className="text-slate-400/70 text-sm text-center font-mono leading-relaxed italic">
+                &ldquo;{liveTranscript}&rdquo;
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Stop Button */}
+        <div className="mt-4">
+          <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={onStop}
@@ -149,14 +166,15 @@ export default function VisceralRecorder({ analyserNode, onStop, duration }: Vis
             <Square className="w-8 h-8 text-white fill-white" />
           </motion.button>
         </div>
-        
-        <p className="mt-4 text-slate-500 text-sm font-medium">Tap to finish</p>
+
+        <p className="mt-2 text-slate-500 text-sm font-medium">Tap to finish</p>
       </div>
 
-      {/* Close/Cancel (Optional) */}
-      <button 
-        onClick={onStop} // For now, close just stops. Later could be cancel.
+      {/* Close */}
+      <button
+        onClick={onStop}
         className="absolute top-8 right-8 btn btn-circle btn-ghost text-slate-500 hover:text-white"
+        aria-label="Stop recording"
       >
         <X className="w-6 h-6" />
       </button>

@@ -1,40 +1,122 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Sparkles, CheckCircle2, ArrowRight, Zap, Shield, Layers, Play } from 'lucide-react';
+import { Mic, Sparkles, CheckCircle2, ArrowRight, Zap, Shield, Layers, Play, Brain, Tag, ListChecks } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import AuthModal from '@/components/AuthModal';
+
+// Interactive typing animation for the hero demo
+function TypewriterText({ text, delay = 0 }: { text: string; delay?: number }) {
+    const [displayed, setDisplayed] = useState('');
+    const [started, setStarted] = useState(false);
+
+    useEffect(() => {
+        const startTimer = setTimeout(() => setStarted(true), delay);
+        return () => clearTimeout(startTimer);
+    }, [delay]);
+
+    useEffect(() => {
+        if (!started) return;
+        let i = 0;
+        const interval = setInterval(() => {
+            setDisplayed(text.slice(0, i + 1));
+            i++;
+            if (i >= text.length) clearInterval(interval);
+        }, 30);
+        return () => clearInterval(interval);
+    }, [text, started]);
+
+    return (
+        <span>
+            {displayed}
+            {started && displayed.length < text.length && (
+                <span className="inline-block w-0.5 h-4 bg-cyan-400 ml-0.5 animate-pulse" />
+            )}
+        </span>
+    );
+}
+
+// Animated waveform bars for the hero recording demo
+function HeroWaveform() {
+    return (
+        <div className="flex items-center gap-[2px] h-8">
+            {[...Array(32)].map((_, i) => (
+                <motion.div
+                    key={i}
+                    className="w-[3px] bg-gradient-to-t from-cyan-500 to-purple-500 rounded-full"
+                    animate={{
+                        height: [
+                            `${12 + Math.sin(i * 0.5) * 8}px`,
+                            `${20 + Math.cos(i * 0.3) * 12}px`,
+                            `${8 + Math.sin(i * 0.7) * 16}px`,
+                            `${12 + Math.sin(i * 0.5) * 8}px`,
+                        ],
+                    }}
+                    transition={{
+                        duration: 1.5 + Math.random() * 0.5,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                        delay: i * 0.03,
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
 
 export default function LandingPage() {
     const { user, loading } = useAuth();
     const router = useRouter();
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [demoPhase, setDemoPhase] = useState<'recording' | 'processing' | 'result'>('recording');
+    const howItWorksRef = useRef<HTMLElement>(null);
 
-    // Redirect to dashboard if already logged in
     useEffect(() => {
         if (!loading && user) {
             router.push('/dashboard');
         }
     }, [user, loading, router]);
 
-    // Scroll effect for navbar
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    if (loading) return null; // Or a sleek loading skeleton
+    // Cycle through demo phases
+    useEffect(() => {
+        const phases: Array<{ phase: typeof demoPhase; duration: number }> = [
+            { phase: 'recording', duration: 4000 },
+            { phase: 'processing', duration: 2000 },
+            { phase: 'result', duration: 5000 },
+        ];
+
+        let current = 0;
+        let timer: NodeJS.Timeout;
+
+        const cycle = () => {
+            setDemoPhase(phases[current].phase);
+            timer = setTimeout(() => {
+                current = (current + 1) % phases.length;
+                cycle();
+            }, phases[current].duration);
+        };
+
+        cycle();
+        return () => clearTimeout(timer);
+    }, []);
+
+    if (loading) return null;
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-100 overflow-x-hidden relative selection:bg-cyan-500/30 selection:text-cyan-200">
 
-            {/* Background Gradients/Glows */}
+            {/* Background Gradients */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-cyan-500/5 blur-[120px]" />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/5 blur-[120px]" />
@@ -102,60 +184,155 @@ export default function LandingPage() {
                             <Mic className="w-5 h-5" />
                             Start Recording Free
                         </button>
-                        <button className="w-full sm:w-auto px-8 py-4 rounded-full bg-slate-800/50 hover:bg-slate-800 text-slate-300 font-semibold backdrop-blur-md border border-slate-700 transition-all flex items-center justify-center gap-2">
-                            <Play className="w-5 h-5 fill-slate-300" />
-                            Watch Demo
+                        <button
+                            onClick={() => howItWorksRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                            className="w-full sm:w-auto px-8 py-4 rounded-full bg-slate-800/50 hover:bg-slate-800 text-slate-300 font-semibold backdrop-blur-md border border-slate-700 transition-all flex items-center justify-center gap-2 group"
+                            aria-label="Scroll to see how it works"
+                        >
+                            <Play className="w-5 h-5 fill-slate-300 group-hover:text-cyan-400 group-hover:fill-cyan-400 transition-colors" />
+                            See How It Works
                         </button>
                     </div>
 
-                    {/* Hero Visual */}
+                    {/* Interactive Hero Demo */}
                     <div className="mt-20 relative max-w-5xl mx-auto">
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent z-10" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent z-10 pointer-events-none" />
                         <div className="relative rounded-2xl border border-white/10 bg-slate-900/50 backdrop-blur-xl overflow-hidden shadow-2xl shadow-cyan-900/20">
                             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50" />
 
-                            {/* Fake UI Representation */}
-                            <div className="p-8 md:p-12 grid md:grid-cols-2 gap-12 items-center">
+                            {/* Live Demo UI */}
+                            <div className="p-8 md:p-12 grid md:grid-cols-2 gap-12 items-center min-h-[320px]">
+                                {/* Left: Recording / Processing */}
                                 <div className="space-y-6 text-left">
-                                    <div className="flex items-center gap-3 mb-8">
-                                        <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-                                        <span className="text-slate-400 font-mono text-sm">Recording... 00:14</span>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div className="h-2 w-3/4 bg-slate-700/50 rounded-full" />
-                                        <div className="h-2 w-full bg-slate-700/50 rounded-full" />
-                                        <div className="h-2 w-5/6 bg-slate-700/50 rounded-full" />
-                                    </div>
-                                    <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/20 mt-6">
-                                        <p className="text-cyan-300 text-sm font-mono flex items-center gap-2">
-                                            <Zap className="w-4 h-4" /> AI Processing
-                                        </p>
-                                    </div>
+                                    <AnimatePresence mode="wait">
+                                        {demoPhase === 'recording' && (
+                                            <motion.div
+                                                key="recording"
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className="space-y-4"
+                                            >
+                                                <div className="flex items-center gap-3 mb-6">
+                                                    <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)] animate-pulse" />
+                                                    <span className="text-slate-300 font-mono text-sm">Recording... 00:14</span>
+                                                </div>
+                                                <HeroWaveform />
+                                                <p className="text-slate-400 text-sm mt-4 font-mono leading-relaxed">
+                                                    <TypewriterText
+                                                        text="We need to reschedule the team sync to Monday and review the Q3 budget before the board meeting..."
+                                                        delay={300}
+                                                    />
+                                                </p>
+                                            </motion.div>
+                                        )}
+
+                                        {demoPhase === 'processing' && (
+                                            <motion.div
+                                                key="processing"
+                                                initial={{ opacity: 0, scale: 0.95 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.95 }}
+                                                className="flex flex-col items-center justify-center py-8"
+                                            >
+                                                <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4">
+                                                    <Brain className="w-8 h-8 text-cyan-400 animate-pulse" />
+                                                </div>
+                                                <p className="text-cyan-300 text-sm font-medium">AI Processing...</p>
+                                                <div className="flex gap-1 mt-3">
+                                                    {[0, 1, 2].map(i => (
+                                                        <motion.div
+                                                            key={i}
+                                                            className="w-2 h-2 rounded-full bg-cyan-400"
+                                                            animate={{ opacity: [0.3, 1, 0.3] }}
+                                                            transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
+
+                                        {demoPhase === 'result' && (
+                                            <motion.div
+                                                key="result"
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className="space-y-3"
+                                            >
+                                                <div className="flex items-center gap-2 mb-4">
+                                                    <CheckCircle2 className="w-4 h-4 text-green-400" />
+                                                    <span className="text-green-400 text-sm font-medium">Transcribed & Analyzed</span>
+                                                </div>
+                                                <h3 className="text-white font-semibold text-lg">Team Sync Reschedule</h3>
+                                                <p className="text-slate-400 text-sm leading-relaxed">
+                                                    We need to reschedule the team sync to Monday and review the Q3 budget before the board meeting.
+                                                </p>
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {['Work', 'High Priority', 'Calendar'].map(tag => (
+                                                        <span key={tag} className="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-400">
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
 
+                                {/* Right: Result Cards */}
                                 <div className="space-y-4">
-                                    <div className="p-4 rounded-xl bg-slate-800/80 border border-slate-700/50 transform rotate-1 hover:rotate-0 transition-transform duration-500">
+                                    <motion.div
+                                        animate={{ opacity: demoPhase === 'result' ? 1 : 0.4 }}
+                                        transition={{ duration: 0.5 }}
+                                        className="p-4 rounded-xl bg-slate-800/80 border border-slate-700/50 hover:border-cyan-500/30 transition-colors"
+                                    >
                                         <h3 className="text-white font-semibold flex items-center gap-2">
-                                            <CheckCircle2 className="w-4 h-4 text-green-400" /> Action Items
+                                            <ListChecks className="w-4 h-4 text-green-400" /> Action Items
                                         </h3>
                                         <ul className="mt-2 space-y-2 text-sm text-slate-400">
-                                            <li>• Schedule team sync for Monday</li>
-                                            <li>• Review Q3 budget proposal</li>
+                                            <li className="flex items-start gap-2">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-green-500/60 mt-0.5 flex-shrink-0" />
+                                                Reschedule team sync to Monday
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-green-500/60 mt-0.5 flex-shrink-0" />
+                                                Review Q3 budget proposal
+                                            </li>
                                         </ul>
-                                    </div>
-                                    <div className="p-4 rounded-xl bg-slate-800/80 border border-slate-700/50 transform -rotate-1 hover:rotate-0 transition-transform duration-500 ml-8">
+                                    </motion.div>
+                                    <motion.div
+                                        animate={{ opacity: demoPhase === 'result' ? 1 : 0.3 }}
+                                        transition={{ duration: 0.5, delay: 0.15 }}
+                                        className="p-4 rounded-xl bg-slate-800/80 border border-slate-700/50 hover:border-purple-500/30 transition-colors ml-4"
+                                    >
                                         <h3 className="text-white font-semibold flex items-center gap-2">
                                             <Sparkles className="w-4 h-4 text-purple-400" /> Key Insights
                                         </h3>
                                         <p className="mt-2 text-sm text-slate-400">
-                                            Project timeline needs adjustment due to external dependency delays.
+                                            Board meeting dependency requires budget review completion by Friday.
                                         </p>
-                                    </div>
+                                    </motion.div>
+                                    <motion.div
+                                        animate={{ opacity: demoPhase === 'result' ? 1 : 0.2 }}
+                                        transition={{ duration: 0.5, delay: 0.3 }}
+                                        className="p-4 rounded-xl bg-slate-800/80 border border-slate-700/50 hover:border-amber-500/30 transition-colors"
+                                    >
+                                        <h3 className="text-white font-semibold flex items-center gap-2">
+                                            <Tag className="w-4 h-4 text-amber-400" /> Auto-Tagged
+                                        </h3>
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {['#meetings', '#budget', '#Q3', '#team'].map(tag => (
+                                                <span key={tag} className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400/80 text-xs border border-amber-500/20">
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </motion.div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Glow under the card */}
                         <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[90%] h-20 bg-cyan-500/20 blur-[60px] rounded-full z-[-1]" />
                     </div>
                 </motion.div>
@@ -166,7 +343,7 @@ export default function LandingPage() {
                 <div className="container mx-auto px-6">
                     <div className="text-center mb-16">
                         <h2 className="text-3xl md:text-5xl font-bold mb-4">Why JotThis?</h2>
-                        <p className="text-slate-400 max-w-2xl mx-auto">Beyond simple transcription. We build a second brain for your voice.</p>
+                        <p className="text-slate-400 max-w-2xl mx-auto">Beyond simple transcription. A second brain for your voice.</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
@@ -181,20 +358,24 @@ export default function LandingPage() {
                             {
                                 icon: Layers,
                                 title: "Auto-Triage",
-                                desc: "JotThis automatically categorizes notes and extracts tasks.",
+                                desc: "Automatically categorizes notes, extracts tasks, and assigns priority levels.",
                                 color: "text-purple-400",
                                 bg: "bg-purple-500/10"
                             },
                             {
                                 icon: Shield,
                                 title: "Private & Secure",
-                                desc: "Your thoughts are yours. Enterprise-grade encryption and privacy first.",
+                                desc: "Your thoughts are yours. Firebase encryption and privacy-first architecture.",
                                 color: "text-emerald-400",
                                 bg: "bg-emerald-500/10"
                             }
                         ].map((feature, i) => (
                             <motion.div
                                 key={i}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: i * 0.15 }}
                                 whileHover={{ y: -5 }}
                                 className="p-8 rounded-2xl bg-slate-800/30 border border-white/5 hover:bg-slate-800/50 hover:border-white/10 transition-all group backdrop-blur-sm"
                             >
@@ -210,44 +391,63 @@ export default function LandingPage() {
             </section>
 
             {/* How it works */}
-            <section className="py-24 relative overflow-hidden">
+            <section ref={howItWorksRef} id="how-it-works" className="py-24 relative overflow-hidden">
                 <div className="absolute inset-0 bg-slate-800/20" />
                 <div className="container mx-auto px-6 relative z-10">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-12">
-                        <div className="md:w-1/2">
-                            <h2 className="text-3xl md:text-4xl font-bold mb-6">From Chaos to Clarity <br /> in Seconds.</h2>
-                            <div className="space-y-8">
-                                {[
-                                    { title: "Record", desc: "Tap once. Speak freely. No limits.", icon: Mic },
-                                    { title: "Process", desc: "AI structures your thoughts instantly.", icon: Zap },
-                                    { title: "Act", desc: "Get a clear summary and next steps.", icon: CheckCircle2 }
-                                ].map((step, i) => (
-                                    <div key={i} className="flex gap-4">
-                                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-slate-300">
-                                            {i + 1}
-                                        </div>
-                                        <div>
-                                            <h4 className="text-lg font-bold text-white">{step.title}</h4>
-                                            <p className="text-slate-400">{step.desc}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="md:w-1/2">
-                            <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-                                <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/20 to-purple-500/20 mix-blend-overlay" />
-                                {/* Abstract Visual or Image Placeholder */}
-                                <div className="aspect-square bg-slate-900/80 flex items-center justify-center p-12">
-                                    <div className="grid grid-cols-2 gap-4 w-full">
-                                        <div className="h-32 rounded-xl bg-slate-800/50 animate-pulse" />
-                                        <div className="h-32 rounded-xl bg-slate-800/50" />
-                                        <div className="h-32 rounded-xl bg-slate-800/50" />
-                                        <div className="h-32 rounded-xl bg-slate-800/50 animate-pulse delay-100" />
-                                    </div>
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl md:text-5xl font-bold mb-4">From Chaos to Clarity</h2>
+                        <p className="text-slate-400 max-w-2xl mx-auto">Three steps. Zero effort. Your voice does the work.</p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                        {[
+                            {
+                                step: 1,
+                                icon: Mic,
+                                title: "Record",
+                                desc: "Tap once and speak freely. No time limits, no fuss. The immersive visualizer lets you know it's listening.",
+                                color: "from-cyan-500 to-blue-500",
+                                glow: "shadow-cyan-500/20"
+                            },
+                            {
+                                step: 2,
+                                icon: Brain,
+                                title: "Process",
+                                desc: "AI transcribes with Whisper, cleans up filler words, generates a title, tags, category, and priority level.",
+                                color: "from-purple-500 to-indigo-500",
+                                glow: "shadow-purple-500/20"
+                            },
+                            {
+                                step: 3,
+                                icon: Zap,
+                                title: "Act",
+                                desc: "Get a structured note with action items, key insights, and smart tags. Search, filter, and triage instantly.",
+                                color: "from-emerald-500 to-teal-500",
+                                glow: "shadow-emerald-500/20"
+                            }
+                        ].map((item, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 30 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: i * 0.2 }}
+                                className="relative text-center group"
+                            >
+                                {/* Connector line (hidden on first and mobile) */}
+                                {i < 2 && (
+                                    <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-px bg-gradient-to-r from-slate-700 to-transparent" />
+                                )}
+
+                                <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${item.color} mx-auto mb-6 flex items-center justify-center shadow-xl ${item.glow} group-hover:scale-110 transition-transform`}>
+                                    <item.icon className="w-10 h-10 text-white" />
                                 </div>
-                            </div>
-                        </div>
+
+                                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Step {item.step}</div>
+                                <h3 className="text-2xl font-bold text-white mb-3">{item.title}</h3>
+                                <p className="text-slate-400 leading-relaxed max-w-xs mx-auto">{item.desc}</p>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
             </section>
@@ -271,7 +471,9 @@ export default function LandingPage() {
             <footer className="py-12 border-t border-white/5 bg-slate-900 text-slate-500 text-sm">
                 <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded bg-slate-800" />
+                        <div className="relative w-6 h-6 rounded overflow-hidden">
+                            <Image src="/icon-512.png" alt="JotThis" fill className="object-cover" />
+                        </div>
                         <span className="font-semibold text-slate-300">JotThis</span>
                     </div>
                     <div className="flex gap-8">
@@ -279,7 +481,7 @@ export default function LandingPage() {
                         <a href="#" className="hover:text-cyan-400 transition-colors">Terms</a>
                         <a href="#" className="hover:text-cyan-400 transition-colors">Contact</a>
                     </div>
-                    <p>© {new Date().getFullYear()} JotThis AI. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} JotThis AI. All rights reserved.</p>
                 </div>
             </footer>
 
