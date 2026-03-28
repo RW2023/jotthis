@@ -6,7 +6,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-type Destination = 'andy' | 'pipeline' | 'idea';
+type Destination = 'claude' | 'pipeline' | 'idea';
 
 interface RelayNote {
   id: string;
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     switch (destination) {
-      case 'andy': {
+      case 'claude': {
         const message = [
           `[JotThis] ${note.title}`,
           '',
@@ -52,12 +52,12 @@ export async function POST(req: NextRequest) {
         const result = await pool.query(
           `INSERT INTO agent_messages (from_agent, to_agent, message, context, read)
            VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-          ['jotthis', 'andy', message, 'vault', false]
+          ['jotthis', 'claude_code', message, 'vault', false]
         );
 
         return NextResponse.json({
           success: true,
-          destination: 'andy',
+          destination: 'claude',
           messageId: result.rows[0].id,
         });
       }

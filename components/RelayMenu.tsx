@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, MessageCircle, Zap, Lightbulb, Check, Loader2 } from 'lucide-react';
+import { Send, Terminal, Zap, Lightbulb, Check, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { VoiceNote } from '@/types';
 
@@ -10,11 +10,11 @@ interface RelayMenuProps {
   isAdmin: boolean;
 }
 
-type Destination = 'andy' | 'pipeline' | 'idea';
+type Destination = 'claude' | 'pipeline' | 'idea';
 type SendStatus = 'idle' | 'sending' | 'sent';
 
 const destinations: { id: Destination; label: string; desc: string; icon: typeof Send }[] = [
-  { id: 'andy', label: 'Send to Andy', desc: 'Message queue for next session', icon: MessageCircle },
+  { id: 'claude', label: 'Send to Claude', desc: 'Picked up during next /prime', icon: Terminal },
   { id: 'pipeline', label: 'Content Pipeline', desc: 'Generate blog + video content', icon: Zap },
   { id: 'idea', label: 'Save as Idea', desc: 'Add to ideas bank', icon: Lightbulb },
 ];
@@ -22,7 +22,7 @@ const destinations: { id: Destination; label: string; desc: string; icon: typeof
 export default function RelayMenu({ note, isAdmin }: RelayMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [statuses, setStatuses] = useState<Record<Destination, SendStatus>>({
-    andy: 'idle',
+    claude: 'idle',
     pipeline: 'idle',
     idea: 'idle',
   });
@@ -78,7 +78,7 @@ export default function RelayMenu({ note, isAdmin }: RelayMenuProps) {
       setStatuses(prev => ({ ...prev, [destination]: 'sent' }));
 
       const labels: Record<Destination, string> = {
-        andy: 'Sent to Andy',
+        claude: 'Sent to Claude',
         pipeline: 'Sent to pipeline',
         idea: 'Saved as idea',
       };
