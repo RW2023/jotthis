@@ -46,46 +46,53 @@ export function useRecording({ user, setNotes, setSelectedNote, onRequireAuth }:
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   const startLiveTranscript = useCallback(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return; // Browser doesn't support it
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      let finalText = '';
-
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let interim = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalText += transcript + ' ';
-          } else {
-            interim = transcript;
-          }
-        }
-        setLiveTranscript((finalText + interim).trim());
-      };
-
-      recognition.onerror = () => {
-        // Silently fail - live transcript is a bonus feature
-      };
-
-      recognition.onend = () => {
-        // Restart if still recording (browser stops after silence)
-        if (recognitionRef.current === recognition) {
-          try { recognition.start(); } catch { /* ignore */ }
-        }
-      };
-
-      recognition.start();
-      recognitionRef.current = recognition;
-    } catch {
-      // Speech recognition not available
+    const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionClass) {
+      console.log('[LiveTranscript] SpeechRecognition not supported');
+      return;
     }
+
+    // Small delay to let MediaRecorder fully acquire the mic first
+    setTimeout(() => {
+      try {
+        const recognition = new SpeechRecognitionClass();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        let finalText = '';
+
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          let interim = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalText += transcript + ' ';
+            } else {
+              interim = transcript;
+            }
+          }
+          setLiveTranscript((finalText + interim).trim());
+        };
+
+        recognition.onerror = (e: { error: string }) => {
+          console.log('[LiveTranscript] Error:', e.error);
+        };
+
+        recognition.onend = () => {
+          // Restart if still recording (browser stops after pauses in speech)
+          if (recognitionRef.current === recognition) {
+            try { recognition.start(); } catch { /* ignore */ }
+          }
+        };
+
+        recognition.start();
+        recognitionRef.current = recognition;
+        console.log('[LiveTranscript] Started');
+      } catch (err) {
+        console.log('[LiveTranscript] Failed to start:', err);
+      }
+    }, 500);
   }, []);
 
   const stopLiveTranscript = useCallback(() => {

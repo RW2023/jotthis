@@ -146,11 +146,13 @@ export default function VisceralRecorder({ analyserNode, onStop, duration, liveT
               initial={{ opacity: 0, y: 10, filter: 'blur(8px)' }}
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
               exit={{ opacity: 0, y: -10 }}
-              className="max-h-24 overflow-hidden"
+              className="max-h-32 overflow-hidden w-full"
             >
-              <p className="text-slate-400/70 text-sm text-center font-mono leading-relaxed italic">
-                &ldquo;{liveTranscript}&rdquo;
-              </p>
+              <div className="bg-black/40 backdrop-blur-md rounded-xl border border-white/10 px-6 py-4 mx-auto max-w-md">
+                <p className="text-slate-100 text-base text-center leading-relaxed tracking-wide">
+                  &ldquo;{liveTranscript}&rdquo;
+                </p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
