@@ -49,6 +49,23 @@ function HomeContent() {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [triageFilter, setTriageFilter] = useState<{ type: 'priority' | 'action', value: string } | null>(null);
 
+  // Admin detection: stored key matches ADMIN_ACCESS_KEY on the server
+  // We check by calling a lightweight endpoint rather than hardcoding the key
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    const storedKey = localStorage.getItem('openai_api_key');
+    if (storedKey) {
+      fetch('/api/relay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': storedKey },
+        body: JSON.stringify({ destination: 'ping' }),
+      }).then(res => {
+        // 400 = admin but bad destination (expected), 403 = not admin
+        setIsAdmin(res.status !== 403);
+      }).catch(() => setIsAdmin(false));
+    }
+  }, []);
+
   // Custom Hooks
   const {
     status, duration, volume, error, analyserNode, isProcessing, liveTranscript, handleRecord,
@@ -338,6 +355,7 @@ function HomeContent() {
                   onFavorite={(id, val) => handleToggleFavorite(id, val)}
                   onLock={(id, val) => handleToggleLock(id, val)}
                   isTrash={viewMode === 'trash'}
+                  isAdmin={isAdmin}
                   onUpdate={handleUpdateNote}
                 />
               </div>
