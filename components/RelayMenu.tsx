@@ -28,9 +28,6 @@ export default function RelayMenu({ note, isAdmin }: RelayMenuProps) {
   });
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Don't render for non-admin users
-  if (!isAdmin) return null;
-
   // Close on outside click
   useEffect(() => {
     if (!isOpen) return;
@@ -42,6 +39,9 @@ export default function RelayMenu({ note, isAdmin }: RelayMenuProps) {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [isOpen]);
+
+  // Don't render for non-admin users
+  if (!isAdmin) return null;
 
   const handleRelay = async (destination: Destination) => {
     if (statuses[destination] === 'sending' || statuses[destination] === 'sent') return;

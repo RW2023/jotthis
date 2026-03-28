@@ -2,22 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/components/AuthProvider';
-import { VoiceNote, NoteCategory } from '@/types';
-import {
-  loadUserNotes,
-  saveVoiceNote,
-  softDeleteVoiceNote,
-  permanentlyDeleteVoiceNote,
-  restoreVoiceNote,
-  archiveVoiceNote,
-  updateNoteInsights,
-  toggleFavoriteVoiceNote,
-  updateVoiceNote,
-  toggleLockVoiceNote,
-  bulkUpdateVoiceNotes,
-  toggleTriageStatus,
-  uploadAudio
-} from '@/lib/firebase-helpers';
+import { VoiceNote } from '@/types';
+import { loadUserNotes } from '@/lib/firebase-helpers';
 import { toast } from 'react-hot-toast';
 
 interface NotesContextType {
@@ -56,9 +42,8 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  useEffect(() => {
-    refreshNotes();
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { refreshNotes(); }, [user]);
 
   const addNote = (note: VoiceNote) => {
     setNotes(prev => [note, ...prev]);
