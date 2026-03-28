@@ -49,13 +49,21 @@ function HomeContent() {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [triageFilter, setTriageFilter] = useState<{ type: 'priority' | 'action', value: string } | null>(null);
 
-  // Admin detection: user's stored key matches the admin access key
+  // Admin detection: stored key matches ADMIN_ACCESS_KEY on the server
+  // We check by calling a lightweight endpoint rather than hardcoding the key
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
     const storedKey = localStorage.getItem('openai_api_key');
-    // The admin key is the magic value that triggers server-side key swap
-    // If the user entered it in settings, they're the admin
-    setIsAdmin(storedKey === 'jotthis-admin-2026');
+    if (storedKey) {
+      fetch('/api/relay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': storedKey },
+        body: JSON.stringify({ destination: 'ping' }),
+      }).then(res => {
+        // 400 = admin but bad destination (expected), 403 = not admin
+        setIsAdmin(res.status !== 403);
+      }).catch(() => setIsAdmin(false));
+    }
   }, []);
 
   // Custom Hooks
