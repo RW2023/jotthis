@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Sparkles, Loader2, ListChecks, Lightbulb, Search, Tag, Share2, Copy, Check, Archive, ArchiveRestore, RefreshCcw, Trash2, Lock, Unlock, CalendarPlus, Mail, HelpCircle, AlertTriangle, TrendingUp } from 'lucide-react';
 import { VoiceNote } from '@/types';
 import TTSPlayer from './TTSPlayer';
+import RelayMenu from './RelayMenu';
 
 import { updateNoteShareToken } from '@/lib/firebase-helpers';
 
@@ -17,6 +18,7 @@ interface NoteDetailProps {
   onFavorite: (id: string, isFavorite: boolean) => void;
   onLock: (id: string, isLocked: boolean) => void;
   isTrash: boolean;
+  isAdmin?: boolean;
 }
 
 type InsightType = 'summary' | 'actionItems' | 'research' | 'contentIdeas' | 'questions' | 'roadblocks' | 'socialMedia' | 'all';
@@ -30,7 +32,8 @@ export default function NoteDetail({
   onRestore,
   onFavorite: _onFavorite,
   onLock,
-  isTrash
+  isTrash,
+  isAdmin = false
 }: NoteDetailProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(note.title);
@@ -242,6 +245,8 @@ export default function NoteDetail({
               <Share2 className="w-5 h-5" />
               <span className="hidden sm:inline">Share</span>
             </button>
+
+            <RelayMenu note={note} isAdmin={isAdmin} />
 
             {!isEditing && (
               <button

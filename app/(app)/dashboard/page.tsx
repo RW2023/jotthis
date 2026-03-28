@@ -49,6 +49,15 @@ function HomeContent() {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [triageFilter, setTriageFilter] = useState<{ type: 'priority' | 'action', value: string } | null>(null);
 
+  // Admin detection: user's stored key matches the admin access key
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    const storedKey = localStorage.getItem('openai_api_key');
+    // The admin key is the magic value that triggers server-side key swap
+    // If the user entered it in settings, they're the admin
+    setIsAdmin(storedKey === 'jotthis-admin-2026');
+  }, []);
+
   // Custom Hooks
   const {
     status, duration, volume, error, analyserNode, isProcessing, liveTranscript, handleRecord,
@@ -338,6 +347,7 @@ function HomeContent() {
                   onFavorite={(id, val) => handleToggleFavorite(id, val)}
                   onLock={(id, val) => handleToggleLock(id, val)}
                   isTrash={viewMode === 'trash'}
+                  isAdmin={isAdmin}
                   onUpdate={handleUpdateNote}
                 />
               </div>
